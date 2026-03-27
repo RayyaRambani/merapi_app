@@ -1,12 +1,21 @@
 import 'dart:convert';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:fl_chart/fl_chart.dart';
 
 void main() {
   runApp(const MyApp());
 }
 
+// ================= QUALITY =================
+String getQuality(double? delay) {
+  if (delay == null) return "UNKNOWN";
+  if (delay < 1) return "EXCELLENT";
+  if (delay < 3) return "GOOD";
+  return "POOR";
+}
+
+// ================= APP =================
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -19,6 +28,7 @@ class MyApp extends StatelessWidget {
   }
 }
 
+// ================= PAGE =================
 class DataPage extends StatefulWidget {
   const DataPage({super.key});
 
@@ -30,63 +40,57 @@ class _DataPageState extends State<DataPage> {
   List data = [];
   bool isLoading = true;
 
-  final String apiUrl = "http://192.168.43.67:3000/api/v1/data";
+  int? lastAlertedId;
+  bool isAlertShowing = false;
+  Timer? timer;
+
+  final String apiUrl =
+      "https://merapi-backend-production.up.railway.app/api/v1/data";
 
   @override
   void initState() {
     super.initState();
+
     fetchData();
+
+    timer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      fetchData();
+    });
   }
 
-  // =========================
-  // FETCH DATA
-  // =========================
+  @override
+  void dispose() {
+    timer?.cancel();
+    super.dispose();
+  }
+
+  // ================= FETCH =================
   Future fetchData() async {
     try {
       final response = await http.get(Uri.parse(apiUrl));
 
       if (response.statusCode == 200) {
+        final newData = jsonDecode(response.body);
+
         setState(() {
-          data = jsonDecode(response.body);
+          data = List.from(newData);
           isLoading = false;
         });
+
+        checkAlert();
       }
     } catch (e) {
-      print("Error: $e");
-      setState(() {
-        isLoading = false;
-      });
+      print("ERROR: $e");
     }
   }
 
-  // =========================
-  // CHART DATA
-  // =========================
-  List<FlSpot> getChartData() {
-    List<FlSpot> spots = [];
-
-    for (int i = 0; i < data.length; i++) {
-      final item = data[i];
-      final value = (item['temperature'] ?? 0).toDouble();
-      spots.add(FlSpot(i.toDouble(), value));
-    }
-
-    return spots;
-  }
-
-  // =========================
-  // STATUS LOGIC
-  // =========================
+  // ================= STATUS =================
   String getStatus(Map item) {
     double gas = (item['gas'] ?? 0).toDouble();
 
-    if (gas > 140) {
-      return "SIAGA";
-    } else if (gas > 120) {
-      return "WASPADA";
-    } else {
-      return "NORMAL";
-    }
+    if (gas > 140) return "SIAGA";
+    if (gas > 120) return "WASPADA";
+    return "NORMAL";
   }
 
   Color getStatusColor(String status) {
@@ -100,84 +104,203 @@ class _DataPageState extends State<DataPage> {
     }
   }
 
-  // =========================
-  // UI
-  // =========================
+  // ================= ALERT =================
+  void checkAlert() {
+    if (data.isEmpty) return;
+
+    final latest = data[0];
+    final status = getStatus(latest);
+    final currentId = latest['id'];
+
+    if (status == "SIAGA" && currentId != lastAlertedId) {
+      lastAlertedId = currentId;
+
+      Future.microtask(() {
+        showAlert(latest);
+      });
+    }
+  }
+
+  void showAlert(Map item) {
+    if (isAlertShowing) return;
+
+    isAlertShowing = true;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text("⚠️ PERINGATAN SIAGA"),
+          content: Text(
+            "Gas tinggi!\n\nNode: ${item['node_id']}\nGas: ${item['gas']}",
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                isAlertShowing = false;
+              },
+              child: const Text("OK"),
+            ),
+          ],
+        ),
+      );
+    });
+  }
+
+  // ================= UI COMPONENT =================
+  Widget bigStatus(Map latest) {
+    final status = getStatus(latest);
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: getStatusColor(status).withOpacity(0.15),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            status,
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: getStatusColor(status),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(status == "SIAGA" ? "Gas tinggi terdeteksi" : "Kondisi normal"),
+        ],
+      ),
+    );
+  }
+
+  Widget sensorCard(String title, String value, IconData icon, Color color) {
+    return Expanded(
+      child: Container(
+        margin: const EdgeInsets.all(6),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 6),
+          ],
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 28),
+            const SizedBox(height: 8),
+            Text(title),
+            const SizedBox(height: 6),
+            Text(
+              value,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget loraCard(Map latest) {
+    final distance = latest['distance'];
+    final delay = latest['delay'];
+
+    final quality = getQuality(delay);
+
+    return Container(
+      margin: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.blue.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "📡 LoRa Connection",
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 10),
+          Text("📏 Distance: ${distance?.toStringAsFixed(1) ?? '-'} m"),
+          Text("⏱ Delay: ${delay?.toStringAsFixed(2) ?? '-'} s"),
+          Text("📶 Quality: $quality"),
+        ],
+      ),
+    );
+  }
+
+  // ================= BUILD =================
   @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    final latest = data.isNotEmpty ? data[0] : {};
+
     return Scaffold(
-      appBar: AppBar(title: const Text("Monitoring Merapi"), centerTitle: true),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
+      backgroundColor: const Color(0xFFF5F6FA),
+      appBar: AppBar(
+        title: const Text("🌋 Merapi Monitor"),
+        centerTitle: true,
+        backgroundColor: Colors.deepOrange,
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            bigStatus(latest),
+
+            Row(
               children: [
-                // 📊 CHART
-                SizedBox(
-                  height: 220,
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: LineChart(
-                      LineChartData(
-                        titlesData: FlTitlesData(show: true),
-                        borderData: FlBorderData(show: true),
-                        lineBarsData: [
-                          LineChartBarData(
-                            spots: getChartData(),
-                            isCurved: true,
-                            barWidth: 3,
-                            dotData: FlDotData(show: false),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+                sensorCard(
+                  "Suhu",
+                  "${latest['temperature'] ?? '-'}°C",
+                  Icons.thermostat,
+                  Colors.orange,
                 ),
-
-                const SizedBox(height: 10),
-
-                // 📋 LIST
-                Expanded(
-                  child: RefreshIndicator(
-                    onRefresh: fetchData,
-                    child: ListView.builder(
-                      itemCount: data.length,
-                      itemBuilder: (context, index) {
-                        final item = data[index];
-                        final status = getStatus(item);
-
-                        return Card(
-                          margin: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 6,
-                          ),
-                          child: ListTile(
-                            title: Text("Node: ${item['node_id']}"),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  "Temp: ${item['temperature']}°C | "
-                                  "Gas: ${item['gas']} | "
-                                  "Pressure: ${item['pressure']}",
-                                ),
-                                const SizedBox(height: 5),
-                                Text(
-                                  "Status: $status",
-                                  style: TextStyle(
-                                    color: getStatusColor(status),
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
+                sensorCard(
+                  "Gas",
+                  "${latest['gas'] ?? '-'}",
+                  Icons.cloud,
+                  Colors.green,
                 ),
               ],
             ),
+
+            Row(
+              children: [
+                sensorCard(
+                  "Pressure",
+                  "${latest['pressure'] ?? '-'}",
+                  Icons.speed,
+                  Colors.blue,
+                ),
+              ],
+            ),
+
+            loraCard(latest),
+
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: ElevatedButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.download),
+                label: const Text("Download Data"),
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 50),
+                  backgroundColor: Colors.deepOrange,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
