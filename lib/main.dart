@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'temperature_page.dart';
 import 'gas_page.dart';
+import 'pressure_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -233,11 +234,7 @@ class _DataPageState extends State<DataPage> {
                         Icons.speed,
                         Colors.blue,
                         () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("Halaman Pressure belum dibuat"),
-                            ),
-                          );
+                          Navigator.push(context, MaterialPageRoute(builder: (_)=> PressurePage(data: data),),);
                         },
                       ),
                     ],
