@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'temperature_page.dart';
+import 'gas_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -213,9 +214,10 @@ class _DataPageState extends State<DataPage> {
                         Icons.cloud,
                         Colors.green,
                         () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("Halaman Gas belum dibuat"),
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => TemperaturePage(data: data),
                             ),
                           );
                         },
