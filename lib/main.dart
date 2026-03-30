@@ -5,10 +5,16 @@ import 'package:http/http.dart' as http;
 import 'temperature_page.dart';
 import 'gas_page.dart';
 import 'pressure_page.dart';
+import 'splash_screen.dart'; // 🔥 TAMBAH INI
 
 void main() {
   runApp(const MyApp());
 }
+
+// ================= COLORS =================
+const bgColor = Color(0xFF0D0D0D);
+const cardColor = Color(0xFF1A1A1A);
+const lavaRed = Color(0xFFFF3B30);
 
 // ================= APP =================
 class MyApp extends StatelessWidget {
@@ -16,9 +22,10 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: DataPage(),
+      theme: ThemeData(fontFamily: 'Roboto'),
+      home: const SplashScreen(), // 🔥 FIX DISINI
     );
   }
 }
@@ -65,14 +72,46 @@ class _DataPageState extends State<DataPage> {
           .timeout(const Duration(seconds: 5));
 
       if (response.statusCode == 200) {
+        final newData = jsonDecode(response.body);
+
         setState(() {
-          data = jsonDecode(response.body);
+          data = newData;
         });
+
+        // 🔥 ALERT SIAGA
+        if (data.isNotEmpty) {
+          checkAlert(data[0]);
+        }
       }
     } catch (e) {
       print("ERROR: $e");
     } finally {
       setState(() => isLoading = false);
+    }
+  }
+
+  // ================= ALERT =================
+  void checkAlert(Map latest) {
+    final gas = (latest['gas'] ?? 0).toDouble();
+
+    if (gas > 140) {
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          backgroundColor: Colors.black,
+          title: const Text("⚠️ SIAGA", style: TextStyle(color: Colors.red)),
+          content: const Text(
+            "Gas tinggi terdeteksi!\nPotensi aktivitas meningkat.",
+            style: TextStyle(color: Colors.white),
+          ),
+          actions: [
+            TextButton(
+              child: const Text("OK", style: TextStyle(color: Colors.red)),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ],
+        ),
+      );
     }
   }
 
@@ -85,54 +124,119 @@ class _DataPageState extends State<DataPage> {
     return "NORMAL";
   }
 
-  Color getStatusColor(String status) {
-    switch (status) {
-      case "SIAGA":
-        return Colors.red;
-      case "WASPADA":
-        return Colors.orange;
-      default:
-        return Colors.green;
-    }
-  }
-
   // ================= SENSOR CARD =================
   Widget sensorCard(
     String title,
     String value,
     IconData icon,
-    Color color,
     VoidCallback onTap,
   ) {
     return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          margin: const EdgeInsets.all(6),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 6),
-            ],
-          ),
-          child: Column(
-            children: [
-              Icon(icon, color: color, size: 28),
-              const SizedBox(height: 8),
-              Text(title),
-              const SizedBox(height: 6),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+      child: TweenAnimationBuilder(
+        duration: const Duration(milliseconds: 300),
+        tween: Tween<double>(begin: 0.95, end: 1),
+        builder: (context, scale, child) {
+          return Transform.scale(scale: scale, child: child);
+        },
+        child: GestureDetector(
+          onTap: onTap,
+          child: Container(
+            margin: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: cardColor,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(color: lavaRed.withOpacity(0.4), blurRadius: 20),
+              ],
+            ),
+            child: Column(
+              children: [
+                Icon(icon, color: lavaRed, size: 30),
+                const SizedBox(height: 10),
+                Text(title, style: const TextStyle(color: Colors.white70)),
+                const SizedBox(height: 6),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
+      ),
+    );
+  }
+
+  // ================= STATUS CARD =================
+  Widget statusCard(String status, double gas) {
+    return TweenAnimationBuilder(
+      tween: Tween<double>(begin: 0.3, end: 0.8),
+      duration: const Duration(seconds: 2),
+      curve: Curves.easeInOut,
+      builder: (context, value, child) {
+        return Container(
+          width: double.infinity,
+          margin: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: cardColor,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(color: lavaRed.withOpacity(value), blurRadius: 30),
+            ],
+          ),
+          child: child,
+        );
+      },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            status,
+            style: const TextStyle(
+              color: lavaRed,
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text("Gas: $gas", style: const TextStyle(color: Colors.white70)),
+        ],
+      ),
+    );
+  }
+
+  // ================= LORA CARD =================
+  Widget loraCard(Map latest) {
+    return Container(
+      margin: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "📡 LoRa Connection",
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            "Distance: ${(latest['distance'] ?? 0).toStringAsFixed(1)} m",
+            style: const TextStyle(color: Colors.white70),
+          ),
+          Text(
+            "Delay: ${(latest['delay'] ?? 0).toStringAsFixed(2)} s",
+            style: const TextStyle(color: Colors.white70),
+          ),
+        ],
       ),
     );
   }
@@ -144,11 +248,15 @@ class _DataPageState extends State<DataPage> {
     final status = getStatus(latest);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F6FA),
+      backgroundColor: bgColor,
       appBar: AppBar(
-        title: const Text("🌋 Merapi Monitor"),
+        title: const Text(
+          "Merapi Monitor",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: Colors.black,
+        elevation: 0,
         centerTitle: true,
-        backgroundColor: Colors.deepOrange,
         actions: [
           if (isLoading)
             const Padding(
@@ -156,50 +264,32 @@ class _DataPageState extends State<DataPage> {
               child: SizedBox(
                 width: 16,
                 height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2),
+                child: CircularProgressIndicator(
+                  color: lavaRed,
+                  strokeWidth: 2,
+                ),
               ),
             ),
         ],
       ),
       body: data.isEmpty
-          ? const Center(child: Text("Tidak ada data"))
+          ? const Center(
+              child: Text(
+                "Tidak ada data",
+                style: TextStyle(color: Colors.white),
+              ),
+            )
           : SingleChildScrollView(
               child: Column(
                 children: [
-                  // STATUS BESAR
-                  Container(
-                    width: double.infinity,
-                    margin: const EdgeInsets.all(12),
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: getStatusColor(status).withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "Status: $status",
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            color: getStatusColor(status),
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text("Gas: ${latest['gas'] ?? '-'}"),
-                      ],
-                    ),
-                  ),
+                  statusCard(status, (latest['gas'] ?? 0).toDouble()),
 
-                  // SENSOR
                   Row(
                     children: [
                       sensorCard(
                         "Suhu",
-                        "${latest['temperature'] ?? '-'}°C",
+                        "${latest['temperature']}°C",
                         Icons.thermostat,
-                        Colors.orange,
                         () {
                           Navigator.push(
                             context,
@@ -209,20 +299,14 @@ class _DataPageState extends State<DataPage> {
                           );
                         },
                       ),
-                      sensorCard(
-                        "Gas",
-                        "${latest['gas'] ?? '-'}",
-                        Icons.cloud,
-                        Colors.green,
-                        () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => TemperaturePage(data: data),
-                            ),
-                          );
-                        },
-                      ),
+                      sensorCard("Gas", "${latest['gas']}", Icons.cloud, () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => GasPage(data: data),
+                          ),
+                        );
+                      }),
                     ],
                   ),
 
@@ -230,41 +314,21 @@ class _DataPageState extends State<DataPage> {
                     children: [
                       sensorCard(
                         "Pressure",
-                        "${latest['pressure'] ?? '-'}",
+                        "${latest['pressure']}",
                         Icons.speed,
-                        Colors.blue,
                         () {
-                          Navigator.push(context, MaterialPageRoute(builder: (_)=> PressurePage(data: data),),);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => PressurePage(data: data),
+                            ),
+                          );
                         },
                       ),
                     ],
                   ),
 
-                  // LORA INFO
-                  Container(
-                    margin: const EdgeInsets.all(12),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          "📡 LoRa Info",
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          "Distance: ${(latest['distance'] ?? 0).toStringAsFixed(1)} m",
-                        ),
-                        Text(
-                          "Delay: ${(latest['delay'] ?? 0).toStringAsFixed(2)} s",
-                        ),
-                      ],
-                    ),
-                  ),
+                  loraCard(latest),
                 ],
               ),
             ),

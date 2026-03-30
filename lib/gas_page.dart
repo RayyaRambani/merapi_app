@@ -73,110 +73,108 @@ class GasPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFF0D0D0D),
       appBar: AppBar(
-        title: const Text("🌫 Detail Gas"),
-        backgroundColor: Colors.deepOrange,
+        title: const Text("GAS", style:TextStyle(color: Colors.white, fontWeight: FontWeight.bold),),
+        backgroundColor: Colors.black,
+        centerTitle: true,
       ),
-      body: data.isEmpty
-          ? const Center(child: Text("Tidak ada data"))
-          : SingleChildScrollView(
-              child: Column(
-                children: [
-                  // CHART
-                  Container(
-                    height: 250,
-                    margin: const EdgeInsets.all(12),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            // 🔥 CHART
+            Container(
+              height: 250,
+              margin: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1A1A1A),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: LineChart(
+                LineChartData(
+                  gridData: FlGridData(show: true),
+                  borderData: FlBorderData(show: false),
+                  lineBarsData: [
+                    LineChartBarData(
+                      spots: getChartData(),
+                      isCurved: true,
+                      color: Colors.red,
+                      barWidth: 3,
+                      dotData: FlDotData(show: false),
                     ),
-                    child: LineChart(
-                      LineChartData(
-                        minY: 0,
-                        gridData: FlGridData(show: true),
-                        borderData: FlBorderData(show: false),
-                        lineBarsData: [
-                          LineChartBarData(
-                            spots: getChartData(),
-                            isCurved: true,
-                            barWidth: 3,
-                            dotData: FlDotData(show: false),
-                            color: Colors.green,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  // STATISTIK
-                  Container(
-                    margin: const EdgeInsets.all(12),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          "📈 Statistik",
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 10),
-                        Text("Min: ${getMin().toStringAsFixed(1)}"),
-                        Text("Max: ${getMax().toStringAsFixed(1)}"),
-                        Text("Avg: ${getAvg().toStringAsFixed(1)}"),
-                      ],
-                    ),
-                  ),
-
-                  // STATUS
-                  Container(
-                    margin: const EdgeInsets.all(12),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: getStatusColor().withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Row(
-                      children: [
-                        const Text("Status: "),
-                        Text(
-                          getStatus(),
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: getStatusColor(),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // ANALISIS
-                  Container(
-                    margin: const EdgeInsets.all(12),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          "🧠 Analisis",
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 10),
-                        Text(getAnalysis()),
-                      ],
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
+
+            // 📊 STATISTIK
+            buildCard("📊 Statistik", [
+              "Min: ${getMin().toStringAsFixed(1)} °C",
+              "Max: ${getMax().toStringAsFixed(1)} °C",
+              "Avg: ${getAvg().toStringAsFixed(1)} °C",
+            ]),
+
+            // ⚠️ STATUS
+            buildStatus(),
+
+            // 🧠 ANALISIS
+            buildCard("🧠 Analisis", [getAnalysis()]),
+          ],
+        ),
+      ),
+    );
+  }
+  Widget buildCard(String title, List<String> content) {
+    return Container(
+      margin: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A1A),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 10),
+          ...content.map(
+            (e) => Text(e, style: const TextStyle(color: Colors.white70)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget buildStatus() {
+    return Container(
+      margin: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.red.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(color: Colors.red.withOpacity(0.4), blurRadius: 20),
+        ],
+      ),
+      child: Row(
+        children: [
+          const Text("Status: ", style: TextStyle(color: Colors.white)),
+          Text(
+            getStatus(),
+            style: const TextStyle(
+              color: Colors.red,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
