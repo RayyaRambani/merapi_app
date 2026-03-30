@@ -30,10 +30,10 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: const [
-            Text("🌋", style: TextStyle(fontSize: 60)),
+            Text("MERAPI |", style: TextStyle(fontSize: 60)),
             SizedBox(height: 20),
             Text(
-              "MERAPI MONITOR",
+              "VOLKANIK AKTIFITAS MONITOR",
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 22,

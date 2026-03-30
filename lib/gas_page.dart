@@ -78,6 +78,7 @@ class GasPage extends StatelessWidget {
         title: const Text("GAS", style:TextStyle(color: Colors.white, fontWeight: FontWeight.bold),),
         backgroundColor: Colors.black,
         centerTitle: true,
+        iconTheme: const IconThemeData(color: Colors.white,),
       ),
       body: SingleChildScrollView(
         child: Column(

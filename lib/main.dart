@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 import 'temperature_page.dart';
 import 'gas_page.dart';
 import 'pressure_page.dart';
-import 'splash_screen.dart'; // 🔥 TAMBAH INI
+import 'splash_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -25,7 +25,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData(fontFamily: 'Roboto'),
-      home: const SplashScreen(), // 🔥 FIX DISINI
+      home: const SplashScreen(),
     );
   }
 }
@@ -78,7 +78,6 @@ class _DataPageState extends State<DataPage> {
           data = newData;
         });
 
-        // 🔥 ALERT SIAGA
         if (data.isNotEmpty) {
           checkAlert(data[0]);
         }
@@ -122,6 +121,13 @@ class _DataPageState extends State<DataPage> {
     if (gas > 140) return "SIAGA";
     if (gas > 120) return "WASPADA";
     return "NORMAL";
+  }
+
+  // ================= FORMAT =================
+  String format(dynamic value, {String suffix = ""}) {
+    if (value == null) return "-";
+    final numVal = (value as num).toDouble();
+    return "${numVal.toStringAsFixed(1)}$suffix";
   }
 
   // ================= SENSOR CARD =================
@@ -177,7 +183,6 @@ class _DataPageState extends State<DataPage> {
     return TweenAnimationBuilder(
       tween: Tween<double>(begin: 0.3, end: 0.8),
       duration: const Duration(seconds: 2),
-      curve: Curves.easeInOut,
       builder: (context, value, child) {
         return Container(
           width: double.infinity,
@@ -205,7 +210,10 @@ class _DataPageState extends State<DataPage> {
             ),
           ),
           const SizedBox(height: 6),
-          Text("Gas: $gas", style: const TextStyle(color: Colors.white70)),
+          Text(
+            "Gas: ${gas.toStringAsFixed(1)}",
+            style: const TextStyle(color: Colors.white70),
+          ),
         ],
       ),
     );
@@ -229,11 +237,11 @@ class _DataPageState extends State<DataPage> {
           ),
           const SizedBox(height: 10),
           Text(
-            "Distance: ${(latest['distance'] ?? 0).toStringAsFixed(1)} m",
+            "Distance: ${format(latest['distance'], suffix: " m")}",
             style: const TextStyle(color: Colors.white70),
           ),
           Text(
-            "Delay: ${(latest['delay'] ?? 0).toStringAsFixed(2)} s",
+            "Delay: ${format(latest['delay'], suffix: " s")}",
             style: const TextStyle(color: Colors.white70),
           ),
         ],
@@ -255,8 +263,8 @@ class _DataPageState extends State<DataPage> {
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.black,
-        elevation: 0,
         centerTitle: true,
+        iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           if (isLoading)
             const Padding(
@@ -288,7 +296,7 @@ class _DataPageState extends State<DataPage> {
                     children: [
                       sensorCard(
                         "Suhu",
-                        "${latest['temperature']}°C",
+                        format(latest['temperature'], suffix: "°C"),
                         Icons.thermostat,
                         () {
                           Navigator.push(
@@ -299,7 +307,7 @@ class _DataPageState extends State<DataPage> {
                           );
                         },
                       ),
-                      sensorCard("Gas", "${latest['gas']}", Icons.cloud, () {
+                      sensorCard("Gas", format(latest['gas']), Icons.cloud, () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -314,7 +322,7 @@ class _DataPageState extends State<DataPage> {
                     children: [
                       sensorCard(
                         "Pressure",
-                        "${latest['pressure']}",
+                        format(latest['pressure']),
                         Icons.speed,
                         () {
                           Navigator.push(

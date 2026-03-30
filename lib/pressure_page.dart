@@ -79,6 +79,7 @@ class PressurePage extends StatelessWidget {
         title: const Text("Pressure", style: TextStyle(color: Colors.white,fontWeight: FontWeight.bold,),),
         backgroundColor: Colors.black,
         centerTitle: true,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: SingleChildScrollView(
         child: Column(
