@@ -72,22 +72,48 @@ class TemperaturePage extends StatelessWidget {
 
   // ================= UI =================
   @override
+  @override
   Widget build(BuildContext context) {
+    final avg = getAvg();
+
     return Scaffold(
       backgroundColor: const Color(0xFF0D0D0D),
       appBar: AppBar(
-        title: const Text("Suhu" , style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold,)),
+        title: const Text("Temperature", style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.black,
         centerTitle: true,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: SingleChildScrollView(
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 🔥 CHART
+            // ================= BIG VALUE =================
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "${avg.toStringAsFixed(1)}°C",
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 42,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    getStatus(),
+                    style: const TextStyle(color: Colors.red, fontSize: 14),
+                  ),
+                ],
+              ),
+            ),
+
+            // ================= CHART =================
             Container(
-              height: 250,
-              margin: const EdgeInsets.all(12),
+              height: 220,
+              margin: const EdgeInsets.symmetric(horizontal: 16),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: const Color(0xFF1A1A1A),
@@ -95,14 +121,14 @@ class TemperaturePage extends StatelessWidget {
               ),
               child: LineChart(
                 LineChartData(
-                  gridData: FlGridData(show: true),
+                  gridData: FlGridData(show: false),
                   borderData: FlBorderData(show: false),
                   lineBarsData: [
                     LineChartBarData(
                       spots: getChartData(),
                       isCurved: true,
-                      color: Colors.red,
                       barWidth: 3,
+                      color: Colors.red,
                       dotData: FlDotData(show: false),
                     ),
                   ],
@@ -110,18 +136,48 @@ class TemperaturePage extends StatelessWidget {
               ),
             ),
 
-            // 📊 STATISTIK
-            buildCard("📊 Statistik", [
-              "Min: ${getMin().toStringAsFixed(1)} °C",
-              "Max: ${getMax().toStringAsFixed(1)} °C",
-              "Avg: ${getAvg().toStringAsFixed(1)} °C",
-            ]),
+            const SizedBox(height: 20),
 
-            // ⚠️ STATUS
-            buildStatus(),
+            // ================= STATISTIK =================
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  statBox("Min", getMin()),
+                  statBox("Max", getMax()),
+                  statBox("Avg", getAvg()),
+                ],
+              ),
+            ),
 
-            // 🧠 ANALISIS
-            buildCard("🧠 Analisis", [getAnalysis()]),
+            const SizedBox(height: 20),
+
+            // ================= ANALISIS =================
+            Container(
+              margin: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1A1A1A),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "Analysis",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    getAnalysis(),
+                    style: const TextStyle(color: Colors.white70),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
@@ -176,6 +232,31 @@ class TemperaturePage extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+  Widget statBox(String title, double value) {
+    return Expanded(
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 4),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1A1A1A),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          children: [
+            Text(title, style: const TextStyle(color: Colors.white54)),
+            const SizedBox(height: 6),
+            Text(
+              value.toStringAsFixed(1),
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

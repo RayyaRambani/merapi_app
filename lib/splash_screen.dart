@@ -41,7 +41,7 @@ class _SplashScreenState extends State<SplashScreen> {
                 letterSpacing: 2,
               ),
             ),
-            SizedBox(height: 10),
+            SizedBox(height: 5),
             Text(
               "Real-time Volcano Monitoring",
               style: TextStyle(color: Colors.white54),

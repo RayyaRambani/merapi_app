@@ -77,10 +77,6 @@ class _DataPageState extends State<DataPage> {
         setState(() {
           data = newData;
         });
-
-        if (data.isNotEmpty) {
-          checkAlert(data[0]);
-        }
       }
     } catch (e) {
       print("ERROR: $e");
@@ -89,45 +85,45 @@ class _DataPageState extends State<DataPage> {
     }
   }
 
-  // ================= ALERT =================
-  void checkAlert(Map latest) {
-    final gas = (latest['gas'] ?? 0).toDouble();
+  // ================= AVERAGE =================
+  double getAverage(Map item) {
+    double temp = (item['temperature'] ?? 0).toDouble();
+    double gas = (item['gas'] ?? 0).toDouble();
+    double pressure = (item['pressure'] ?? 0).toDouble();
 
-    if (gas > 140) {
-      showDialog(
-        context: context,
-        builder: (_) => AlertDialog(
-          backgroundColor: Colors.black,
-          title: const Text("⚠️ SIAGA", style: TextStyle(color: Colors.red)),
-          content: const Text(
-            "Gas tinggi terdeteksi!\nPotensi aktivitas meningkat.",
-            style: TextStyle(color: Colors.white),
-          ),
-          actions: [
-            TextButton(
-              child: const Text("OK", style: TextStyle(color: Colors.red)),
-              onPressed: () => Navigator.pop(context),
-            ),
-          ],
-        ),
-      );
-    }
+    return (temp + gas + pressure) / 3;
   }
 
   // ================= STATUS =================
   String getStatus(Map item) {
-    double gas = (item['gas'] ?? 0).toDouble();
+    double avg = getAverage(item);
 
-    if (gas > 140) return "SIAGA";
-    if (gas > 120) return "WASPADA";
+    if (avg >= 120) return "SIAGA";
+    if (avg >= 90) return "WASPADA";
     return "NORMAL";
+  }
+
+  Color getStatusColor(String status) {
+    switch (status) {
+      case "SIAGA":
+        return Colors.red;
+      case "WASPADA":
+        return Colors.orange;
+      default:
+        return Colors.green;
+    }
   }
 
   // ================= FORMAT =================
   String format(dynamic value, {String suffix = ""}) {
     if (value == null) return "-";
-    final numVal = (value as num).toDouble();
-    return "${numVal.toStringAsFixed(1)}$suffix";
+
+    try {
+      final numVal = (value as num).toDouble();
+      return "${numVal.toStringAsFixed(1)}$suffix";
+    } catch (e) {
+      return "-";
+    }
   }
 
   // ================= SENSOR CARD =================
@@ -135,104 +131,142 @@ class _DataPageState extends State<DataPage> {
     String title,
     String value,
     IconData icon,
+    Color color,
     VoidCallback onTap,
   ) {
-    return Expanded(
-      child: TweenAnimationBuilder(
-        duration: const Duration(milliseconds: 300),
-        tween: Tween<double>(begin: 0.95, end: 1),
-        builder: (context, scale, child) {
-          return Transform.scale(scale: scale, child: child);
-        },
-        child: GestureDetector(
-          onTap: onTap,
-          child: Container(
-            margin: const EdgeInsets.all(8),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: cardColor,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(color: lavaRed.withOpacity(0.4), blurRadius: 20),
-              ],
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: cardColor,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [BoxShadow(color: color.withOpacity(0.4), blurRadius: 20)],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, color: color),
+            const SizedBox(height: 10),
+            Text(title, style: const TextStyle(color: Colors.white70)),
+            const Spacer(),
+            Text(
+              value,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-            child: Column(
-              children: [
-                Icon(icon, color: lavaRed, size: 30),
-                const SizedBox(height: 10),
-                Text(title, style: const TextStyle(color: Colors.white70)),
-                const SizedBox(height: 6),
-                Text(
-                  value,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
+          ],
         ),
       ),
     );
   }
 
-  // ================= STATUS CARD =================
-  Widget statusCard(String status, double gas) {
-    return TweenAnimationBuilder(
-      tween: Tween<double>(begin: 0.3, end: 0.8),
-      duration: const Duration(seconds: 2),
-      builder: (context, value, child) {
-        return Container(
-          width: double.infinity,
-          margin: const EdgeInsets.all(12),
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: cardColor,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(color: lavaRed.withOpacity(value), blurRadius: 30),
-            ],
-          ),
-          child: child,
-        );
-      },
+  // ================= HEADER =================
+  Widget buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+        children: const [
           Text(
-            status,
-            style: const TextStyle(
-              color: lavaRed,
-              fontSize: 28,
+            "Merapi Monitor",
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 20,
               fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 6),
-          Text(
-            "Gas: ${gas.toStringAsFixed(1)}",
-            style: const TextStyle(color: Colors.white70),
-          ),
+          SizedBox(height: 4),
+          Text("Real-time Monitoring", style: TextStyle(color: Colors.white54)),
         ],
       ),
     );
   }
 
-  // ================= LORA CARD =================
+  // ================= CONTENT =================
+  Widget buildContent(Map latest) {
+    return Column(
+      children: [
+        const SizedBox(height: 10),
+
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: GridView.count(
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            children: [
+              sensorCard(
+                "Temperature",
+                format(latest['temperature'], suffix: "°C"),
+                Icons.thermostat,
+                Colors.orange,
+                () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => TemperaturePage(data: data),
+                    ),
+                  );
+                },
+              ),
+              sensorCard(
+                "Gas",
+                format(latest['gas']),
+                Icons.cloud,
+                Colors.green,
+                () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => GasPage(data: data)),
+                  );
+                },
+              ),
+              sensorCard(
+                "Pressure",
+                format(latest['pressure']),
+                Icons.speed,
+                Colors.blue,
+                () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => PressurePage(data: data)),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 20),
+
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: loraCard(latest),
+        ),
+
+        const SizedBox(height: 30),
+      ],
+    );
+  }
+
+  // ================= LORA =================
   Widget loraCard(Map latest) {
     return Container(
-      margin: const EdgeInsets.all(12),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: cardColor,
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white10),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            "📡 LoRa Connection",
+            "Connection",
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 10),
@@ -252,7 +286,7 @@ class _DataPageState extends State<DataPage> {
   // ================= BUILD =================
   @override
   Widget build(BuildContext context) {
-    final latest = data.isNotEmpty ? data[0] : {};
+    final latest = data.isNotEmpty ? data[0] as Map : {};
     final status = getStatus(latest);
 
     return Scaffold(
@@ -287,59 +321,90 @@ class _DataPageState extends State<DataPage> {
                 style: TextStyle(color: Colors.white),
               ),
             )
-          : SingleChildScrollView(
-              child: Column(
-                children: [
-                  statusCard(status, (latest['gas'] ?? 0).toDouble()),
+          : CustomScrollView(
+              slivers: [
+                SliverToBoxAdapter(child: buildHeader()),
 
-                  Row(
-                    children: [
-                      sensorCard(
-                        "Suhu",
-                        format(latest['temperature'], suffix: "°C"),
-                        Icons.thermostat,
-                        () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => TemperaturePage(data: data),
-                            ),
-                          );
-                        },
-                      ),
-                      sensorCard("Gas", format(latest['gas']), Icons.cloud, () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => GasPage(data: data),
-                          ),
-                        );
-                      }),
-                    ],
-                  ),
+                SliverPersistentHeader(
+                  pinned: true,
+                  delegate: StatusHeaderDelegate(status: status),
+                ),
 
-                  Row(
-                    children: [
-                      sensorCard(
-                        "Pressure",
-                        format(latest['pressure']),
-                        Icons.speed,
-                        () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => PressurePage(data: data),
-                            ),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-
-                  loraCard(latest),
-                ],
-              ),
+                SliverToBoxAdapter(child: buildContent(latest)),
+              ],
             ),
     );
   }
+}
+
+// ================= STICKY STATUS =================
+class StatusHeaderDelegate extends SliverPersistentHeaderDelegate {
+  final String status;
+
+  StatusHeaderDelegate({required this.status});
+
+  Color getStatusColor(String status) {
+    switch (status) {
+      case "SIAGA":
+        return Colors.red;
+      case "WASPADA":
+        return Colors.orange;
+      default:
+        return Colors.green;
+    }
+  }
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    final color = getStatusColor(status);
+
+    return SizedBox.expand(
+      child: Container(
+        color: bgColor,
+        padding: const EdgeInsets.all(12),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            gradient: LinearGradient(
+              colors: [color.withOpacity(0.9), color.withOpacity(0.6)],
+            ),
+          ),
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text(
+                  "STATUS",
+                  style: TextStyle(color: Colors.white70, fontSize: 12),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  status,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  double get maxExtent => 100;
+
+  @override
+  double get minExtent => 100;
+
+  @override
+  bool shouldRebuild(covariant oldDelegate) => true;
 }
