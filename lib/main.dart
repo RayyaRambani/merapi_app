@@ -126,44 +126,6 @@ class _DataPageState extends State<DataPage> {
     }
   }
 
-  // ================= SENSOR CARD =================
-  Widget sensorCard(
-    String title,
-    String value,
-    IconData icon,
-    Color color,
-    VoidCallback onTap,
-  ) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: cardColor,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [BoxShadow(color: color.withOpacity(0.4), blurRadius: 20)],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, color: color),
-            const SizedBox(height: 10),
-            Text(title, style: const TextStyle(color: Colors.white70)),
-            const Spacer(),
-            Text(
-              value,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   // ================= HEADER =================
   Widget buildHeader() {
     return Padding(
@@ -186,6 +148,100 @@ class _DataPageState extends State<DataPage> {
     );
   }
 
+  // ================= SENSOR LIST CARD =================
+Widget sensorListCard(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+    VoidCallback onTap,
+  ) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 20),
+
+        // 🔥 GRADIENT BORDER
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          gradient: LinearGradient(
+            colors: [
+              Colors.redAccent.withOpacity(0.8),
+              Colors.deepOrange,
+              Colors.red.shade900,
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+
+        padding: const EdgeInsets.all(1.5),
+
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: cardColor,
+            borderRadius: BorderRadius.circular(22),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.redAccent.withOpacity(0.2),
+                blurRadius: 25,
+              ),
+            ],
+          ),
+
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ================= TOP ROW =================
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // ICON SENSOR
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(icon, color: color, size: 22),
+                  ),
+
+                  // 🔥 ICON NAVIGASI (INDIKASI BISA DIKLIK)
+                  const Icon(
+                    Icons.arrow_forward_ios,
+                    color: Colors.white30,
+                    size: 16,
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 16),
+
+              // ================= TITLE =================
+              Text(
+                title,
+                style: const TextStyle(color: Colors.white70, fontSize: 13),
+              ),
+
+              const SizedBox(height: 6),
+
+              // ================= VALUE =================
+              Text(
+                value,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 26,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
   // ================= CONTENT =================
   Widget buildContent(Map latest) {
     return Column(
@@ -193,13 +249,10 @@ class _DataPageState extends State<DataPage> {
         const SizedBox(height: 10),
 
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Column(
             children: [
-              sensorCard(
+              sensorListCard(
                 "Temperature",
                 format(latest['temperature'], suffix: "°C"),
                 Icons.thermostat,
@@ -213,7 +266,7 @@ class _DataPageState extends State<DataPage> {
                   );
                 },
               ),
-              sensorCard(
+              sensorListCard(
                 "Gas",
                 format(latest['gas']),
                 Icons.cloud,
@@ -225,7 +278,7 @@ class _DataPageState extends State<DataPage> {
                   );
                 },
               ),
-              sensorCard(
+              sensorListCard(
                 "Pressure",
                 format(latest['pressure']),
                 Icons.speed,
@@ -248,6 +301,11 @@ class _DataPageState extends State<DataPage> {
           child: loraCard(latest),
         ),
 
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: exportCard(context),
+        ),
+
         const SizedBox(height: 30),
       ],
     );
@@ -256,29 +314,170 @@ class _DataPageState extends State<DataPage> {
   // ================= LORA =================
   Widget loraCard(Map latest) {
     return Container(
-      padding: const EdgeInsets.all(18),
+      margin: const EdgeInsets.only(bottom: 16),
+
+      // 🔥 GRADIENT BORDER
       decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white10),
+        borderRadius: BorderRadius.circular(24),
+        gradient: LinearGradient(
+          colors: [
+            Colors.redAccent.withOpacity(0.8),
+            Colors.deepOrange,
+            Colors.red.shade900,
+          ],
+        ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            "Connection",
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+
+      padding: const EdgeInsets.all(1.5),
+
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: cardColor,
+          borderRadius: BorderRadius.circular(22),
+        ),
+
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 🔥 TOP ROW
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // ICON
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.wifi, color: Colors.green),
+                ),
+
+                // 🔥 TITIK HIJAU (STATUS)
+                Container(
+                  width: 10,
+                  height: 10,
+                  decoration: const BoxDecoration(
+                    color: Colors.green,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+
+            // TITLE
+            const Text(
+              "LoRa Connection",
+              style: TextStyle(color: Colors.white70),
+            ),
+
+            const SizedBox(height: 6),
+
+            // STATUS
+            const Text(
+              "Connected",
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
+            // 🔥 BADGE
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.green.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Text(
+                "Signal Strong",
+                style: TextStyle(color: Colors.green, fontSize: 12),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  Widget exportCard(BuildContext context) {
+    return GestureDetector(
+      onTap: () async {
+        final url =
+            "https://merapi-backend-production.up.railway.app/api/v1/export?date=2026-03-31";
+
+        // 🔥 buka link download
+        // nanti bisa pakai url_launcher kalau mau auto download
+        print("Download: $url");
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 20),
+
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          gradient: LinearGradient(
+            colors: [
+              Colors.redAccent.withOpacity(0.8),
+              Colors.deepOrange,
+              Colors.red.shade900,
+            ],
           ),
-          const SizedBox(height: 10),
-          Text(
-            "Distance: ${format(latest['distance'], suffix: " m")}",
-            style: const TextStyle(color: Colors.white70),
+        ),
+
+        padding: const EdgeInsets.all(1.5),
+
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: cardColor,
+            borderRadius: BorderRadius.circular(22),
           ),
-          Text(
-            "Delay: ${format(latest['delay'], suffix: " s")}",
-            style: const TextStyle(color: Colors.white70),
+
+          child: Row(
+            children: [
+              // ICON
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.download, color: Colors.blue),
+              ),
+
+              const SizedBox(width: 14),
+
+              // TEXT
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    Text(
+                      "Export Data",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      "Download sensor records",
+                      style: TextStyle(color: Colors.white70, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+
+              // ARROW
+              const Icon(Icons.arrow_forward, color: Colors.blue),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -299,20 +498,6 @@ class _DataPageState extends State<DataPage> {
         backgroundColor: Colors.black,
         centerTitle: true,
         iconTheme: const IconThemeData(color: Colors.white),
-        actions: [
-          if (isLoading)
-            const Padding(
-              padding: EdgeInsets.all(12),
-              child: SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(
-                  color: lavaRed,
-                  strokeWidth: 2,
-                ),
-              ),
-            ),
-        ],
       ),
       body: data.isEmpty
           ? const Center(
@@ -324,12 +509,10 @@ class _DataPageState extends State<DataPage> {
           : CustomScrollView(
               slivers: [
                 SliverToBoxAdapter(child: buildHeader()),
-
                 SliverPersistentHeader(
                   pinned: true,
                   delegate: StatusHeaderDelegate(status: status),
                 ),
-
                 SliverToBoxAdapter(child: buildContent(latest)),
               ],
             ),
@@ -367,7 +550,6 @@ class StatusHeaderDelegate extends SliverPersistentHeaderDelegate {
         color: bgColor,
         padding: const EdgeInsets.all(12),
         child: Container(
-          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
             gradient: LinearGradient(
@@ -376,7 +558,7 @@ class StatusHeaderDelegate extends SliverPersistentHeaderDelegate {
           ),
           child: Center(
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 const Text(
                   "STATUS",
@@ -400,10 +582,10 @@ class StatusHeaderDelegate extends SliverPersistentHeaderDelegate {
   }
 
   @override
-  double get maxExtent => 100;
+  double get maxExtent => 110;
 
   @override
-  double get minExtent => 100;
+  double get minExtent => 110;
 
   @override
   bool shouldRebuild(covariant oldDelegate) => true;
