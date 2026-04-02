@@ -6,8 +6,13 @@ import 'temperature_page.dart';
 import 'gas_page.dart';
 import 'pressure_page.dart';
 import 'splash_screen.dart';
-
-void main() {
+import 'export_page.dart';
+import 'package:flutter_downloader/flutter_downloader.dart';
+import 'package:permission_handler/permission_handler.dart';
+void main() async{
+  WidgetsFlutterBinding.ensureInitialized();
+  await FlutterDownloader.initialize(debug: true);
+  await Permission.storage.request();
   runApp(const MyApp());
 }
 
@@ -71,7 +76,7 @@ class _DataPageState extends State<DataPage> {
           .get(Uri.parse(apiUrl))
           .timeout(const Duration(seconds: 5));
 
-      if (response.statusCode == 200) {
+      if (response.statusCode == 200 && response.body.isNotEmpty) {
         final newData = jsonDecode(response.body);
 
         setState(() {
@@ -149,7 +154,7 @@ class _DataPageState extends State<DataPage> {
   }
 
   // ================= SENSOR LIST CARD =================
-Widget sensorListCard(
+  Widget sensorListCard(
     String title,
     String value,
     IconData icon,
@@ -242,6 +247,7 @@ Widget sensorListCard(
       ),
     );
   }
+
   // ================= CONTENT =================
   Widget buildContent(Map latest) {
     return Column(
@@ -405,19 +411,17 @@ Widget sensorListCard(
       ),
     );
   }
+
   Widget exportCard(BuildContext context) {
     return GestureDetector(
-      onTap: () async {
-        final url =
-            "https://merapi-backend-production.up.railway.app/api/v1/export?date=2026-03-31";
-
-        // 🔥 buka link download
-        // nanti bisa pakai url_launcher kalau mau auto download
-        print("Download: $url");
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const ExportPage()),
+        );
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 20),
-
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(24),
           gradient: LinearGradient(
@@ -428,19 +432,15 @@ Widget sensorListCard(
             ],
           ),
         ),
-
         padding: const EdgeInsets.all(1.5),
-
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: cardColor,
             borderRadius: BorderRadius.circular(22),
           ),
-
           child: Row(
             children: [
-              // ICON
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -449,14 +449,11 @@ Widget sensorListCard(
                 ),
                 child: const Icon(Icons.download, color: Colors.blue),
               ),
-
               const SizedBox(width: 14),
-
-              // TEXT
-              Expanded(
+              const Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
+                  children: [
                     Text(
                       "Export Data",
                       style: TextStyle(
@@ -472,8 +469,6 @@ Widget sensorListCard(
                   ],
                 ),
               ),
-
-              // ARROW
               const Icon(Icons.arrow_forward, color: Colors.blue),
             ],
           ),
