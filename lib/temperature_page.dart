@@ -6,17 +6,39 @@ class TemperaturePage extends StatelessWidget {
 
   const TemperaturePage({super.key, required this.data});
 
-  double getCurrent() => (data.last['temperature'] ?? 0).toDouble();
+  // ================= DATA =================
+  List<FlSpot> getChart() {
+    List<FlSpot> spots = [];
 
-  double getMin() => data
-      .map((e) => (e['temperature'] ?? 0).toDouble())
-      .reduce((a, b) => a < b ? a : b);
+    for (int i = 0; i < data.length; i++) {
+      final temp = (data[i]['temperature'] ?? 0).toDouble();
 
-  double getMax() => data
-      .map((e) => (e['temperature'] ?? 0).toDouble())
-      .reduce((a, b) => a > b ? a : b);
+      // 🔥 FIX: pakai index (bukan timestamp)
+      double x = i.toDouble();
+
+      spots.add(FlSpot(x, temp));
+    }
+
+    return spots;
+  }
+
+  double getCurrent() =>
+      data.isNotEmpty ? (data.last['temperature'] ?? 0).toDouble() : 0;
+
+  double getMin() => data.isNotEmpty
+      ? data
+            .map((e) => (e['temperature'] ?? 0).toDouble())
+            .reduce((a, b) => a < b ? a : b)
+      : 0;
+
+  double getMax() => data.isNotEmpty
+      ? data
+            .map((e) => (e['temperature'] ?? 0).toDouble())
+            .reduce((a, b) => a > b ? a : b)
+      : 0;
 
   double getAvg() {
+    if (data.isEmpty) return 0;
     final temps = data.map((e) => (e['temperature'] ?? 0).toDouble()).toList();
     return temps.reduce((a, b) => a + b) / temps.length;
   }
@@ -43,17 +65,22 @@ class TemperaturePage extends StatelessWidget {
     }
   }
 
-  List<FlSpot> getChart() {
-    List<FlSpot> spots = [];
-    for (int i = 0; i < data.length; i++) {
-      spots.add(FlSpot(i.toDouble(), (data[i]['temperature'] ?? 0).toDouble()));
-    }
-    return spots;
-  }
-
   @override
   Widget build(BuildContext context) {
     final current = getCurrent();
+    final spots = getChart();
+
+    if (data.isEmpty) {
+      return const Scaffold(
+        backgroundColor: Color(0xFF0D0D0D),
+        body: Center(
+          child: Text("No Data", style: TextStyle(color: Colors.white)),
+        ),
+      );
+    }
+
+    double minY = getMin() - 5;
+    double maxY = getMax() + 5;
 
     return Scaffold(
       backgroundColor: const Color(0xFF0D0D0D),
@@ -68,7 +95,7 @@ class TemperaturePage extends StatelessWidget {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // 🔥 HEADER
+            // ================= HEADER =================
             Container(
               margin: const EdgeInsets.all(16),
               padding: const EdgeInsets.all(20),
@@ -107,7 +134,7 @@ class TemperaturePage extends StatelessWidget {
               ),
             ),
 
-            // 🔥 CHART
+            // ================= CHART =================
             card(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -117,19 +144,136 @@ class TemperaturePage extends StatelessWidget {
                     style: TextStyle(color: Colors.white),
                   ),
                   const SizedBox(height: 12),
+
                   SizedBox(
-                    height: 200,
+                    height: 220,
                     child: LineChart(
                       LineChartData(
-                        gridData: FlGridData(show: true),
+                        minX: 0,
+                        maxX: data.length.toDouble(),
+                        minY: minY,
+                        maxY: maxY,
+
+                        gridData: FlGridData(
+                          show: true,
+                          horizontalInterval: (maxY - minY) / 4,
+                          getDrawingHorizontalLine: (value) {
+                            return FlLine(color: Colors.white10);
+                          },
+                        ),
+
                         borderData: FlBorderData(show: false),
+
+                        // 🔥 TOOLTIP FIX
+                        lineTouchData: LineTouchData(
+                          enabled: true,
+                          touchTooltipData: LineTouchTooltipData(
+                            tooltipBgColor: Colors.black87,
+                            getTooltipItems: (touchedSpots) {
+                              return touchedSpots.map((spot) {
+                                int index = spot.x.toInt();
+
+                                final rawTime = data[index]['created_at'];
+
+                                DateTime dt;
+                                try {
+                                  dt = DateTime.parse(rawTime);
+                                } catch (e) {
+                                  dt = DateTime.now();
+                                }
+
+                                return LineTooltipItem(
+                                  "${spot.y.toStringAsFixed(1)}°C\n"
+                                  "${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}",
+                                  const TextStyle(color: Colors.white),
+                                );
+                              }).toList();
+                            },
+                          ),
+                        ),
+
+                        titlesData: FlTitlesData(
+                          leftTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              interval: (maxY - minY) / 4,
+                              reservedSize: 40,
+                              getTitlesWidget: (value, meta) {
+                                return Text(
+                                  value.toInt().toString(),
+                                  style: const TextStyle(
+                                    color: Colors.white54,
+                                    fontSize: 10,
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+
+                          // 🔥 FIX ANTI BENTROK
+                          bottomTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              reservedSize: 30,
+                              getTitlesWidget: (value, meta) {
+                                int index = value.toInt();
+
+                                if (index < 0 || index >= data.length) {
+                                  return const SizedBox();
+                                }
+
+                                int step = (data.length / 4).ceil();
+
+                                if (index % step != 0) {
+                                  return const SizedBox();
+                                }
+
+                                final rawTime = data[index]['created_at'];
+
+                                DateTime dt;
+                                try {
+                                  dt = DateTime.parse(rawTime);
+                                } catch (e) {
+                                  return const SizedBox();
+                                }
+
+                                return Text(
+                                  "${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}",
+                                  style: const TextStyle(
+                                    color: Colors.white54,
+                                    fontSize: 10,
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+
+                          rightTitles: AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
+                          topTitles: AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
+                        ),
+
                         lineBarsData: [
                           LineChartBarData(
-                            spots: getChart(),
+                            spots: spots,
                             isCurved: true,
-                            color: Colors.red,
+                            color: Colors.redAccent,
                             barWidth: 3,
-                            dotData: FlDotData(show: false),
+                            belowBarData: BarAreaData(
+                              show: true,
+                              gradient: LinearGradient(
+                                colors: [
+                                  Colors.red.withOpacity(0.3),
+                                  Colors.transparent,
+                                ],
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                              ),
+                            ),
+                            dotData: FlDotData(show: true),
                           ),
                         ],
                       ),
@@ -139,7 +283,7 @@ class TemperaturePage extends StatelessWidget {
               ),
             ),
 
-            // 🔥 STATUS
+            // ================= STATUS =================
             Row(
               children: [
                 Expanded(
@@ -187,7 +331,7 @@ class TemperaturePage extends StatelessWidget {
               ],
             ),
 
-            // 🔥 ANALYSIS
+            // ================= ANALYSIS =================
             card(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

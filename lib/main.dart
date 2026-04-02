@@ -9,17 +9,16 @@ import 'splash_screen.dart';
 import 'export_page.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:permission_handler/permission_handler.dart';
-void main() async{
+import 'volcano_analyzer.dart';
+import 'lora_page.dart';
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await FlutterDownloader.initialize(debug: true);
   await Permission.storage.request();
   runApp(const MyApp());
 }
 
-// ================= COLORS =================
 const bgColor = Color(0xFF0D0D0D);
-const cardColor = Color(0xFF1A1A1A);
-const lavaRed = Color(0xFFFF3B30);
 
 // ================= APP =================
 class MyApp extends StatelessWidget {
@@ -45,7 +44,6 @@ class DataPage extends StatefulWidget {
 
 class _DataPageState extends State<DataPage> {
   List data = [];
-  bool isLoading = false;
   Timer? timer;
 
   final String apiUrl =
@@ -56,7 +54,7 @@ class _DataPageState extends State<DataPage> {
     super.initState();
     fetchData();
 
-    timer = Timer.periodic(const Duration(seconds: 10), (timer) {
+    timer = Timer.periodic(const Duration(seconds: 10), (_) {
       fetchData();
     });
   }
@@ -67,94 +65,206 @@ class _DataPageState extends State<DataPage> {
     super.dispose();
   }
 
-  // ================= FETCH =================
   Future fetchData() async {
     try {
-      setState(() => isLoading = true);
+      final response = await http.get(Uri.parse(apiUrl));
 
-      final response = await http
-          .get(Uri.parse(apiUrl))
-          .timeout(const Duration(seconds: 5));
-
-      if (response.statusCode == 200 && response.body.isNotEmpty) {
-        final newData = jsonDecode(response.body);
-
+      if (response.statusCode == 200) {
         setState(() {
-          data = newData;
+          data = jsonDecode(response.body);
         });
       }
     } catch (e) {
-      print("ERROR: $e");
-    } finally {
-      setState(() => isLoading = false);
+      print(e);
     }
   }
 
-  // ================= AVERAGE =================
-  double getAverage(Map item) {
-    double temp = (item['temperature'] ?? 0).toDouble();
-    double gas = (item['gas'] ?? 0).toDouble();
-    double pressure = (item['pressure'] ?? 0).toDouble();
-
-    return (temp + gas + pressure) / 3;
-  }
-
-  // ================= STATUS =================
-  String getStatus(Map item) {
-    double avg = getAverage(item);
-
-    if (avg >= 120) return "SIAGA";
-    if (avg >= 90) return "WASPADA";
-    return "NORMAL";
-  }
-
-  Color getStatusColor(String status) {
-    switch (status) {
-      case "SIAGA":
-        return Colors.red;
-      case "WASPADA":
-        return Colors.orange;
-      default:
-        return Colors.green;
-    }
-  }
-
-  // ================= FORMAT =================
   String format(dynamic value, {String suffix = ""}) {
     if (value == null) return "-";
-
-    try {
-      final numVal = (value as num).toDouble();
-      return "${numVal.toStringAsFixed(1)}$suffix";
-    } catch (e) {
-      return "-";
-    }
+    return "${(value as num).toDouble().toStringAsFixed(1)}$suffix";
   }
 
-  // ================= HEADER =================
-  Widget buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 10),
+  // ================= ANALYZER =================
+  Map analyzer() {
+    if (data.length < 2) {
+      return {
+        "status": "SAFE",
+        "color": Colors.green,
+        "analysis": "Menunggu data...",
+      };
+    }
+
+    final last = data.last;
+    final prev = data[data.length - 2];
+
+    double temp = (last['temperature'] ?? 0).toDouble();
+    double gas = (last['gas'] ?? 0).toDouble();
+    double pressure = (last['pressure'] ?? 0).toDouble();
+
+    double prevTemp = (prev['temperature'] ?? 0).toDouble();
+    double prevGas = (prev['gas'] ?? 0).toDouble();
+    double prevPressure = (prev['pressure'] ?? 0).toDouble();
+
+    final status = VolcanoAnalyzer.getStatus(
+      temp: temp,
+      gas: gas,
+      pressure: pressure,
+      prevTemp: prevTemp,
+      prevGas: prevGas,
+      prevPressure: prevPressure,
+    );
+
+    return {
+      "status": status,
+      "color": VolcanoAnalyzer.getColor(status),
+      "analysis": VolcanoAnalyzer.getAnalysis(
+        temp: temp,
+        gas: gas,
+        pressure: pressure,
+        prevTemp: prevTemp,
+        prevGas: prevGas,
+        prevPressure: prevPressure,
+      ),
+    };
+  }
+
+  // ================= ANALYSIS CARD =================
+  Widget analysisCard() {
+    final result = analyzer();
+
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            result["color"].withOpacity(0.9),
+            result["color"].withOpacity(0.6),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(color: result["color"].withOpacity(0.4), blurRadius: 20),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
+        children: [
+          const Text(
+            "Volcano Analysis",
+            style: TextStyle(color: Colors.white70),
+          ),
+
+          const SizedBox(height: 10),
+
           Text(
-            "Merapi Monitor",
-            style: TextStyle(
+            result["status"],
+            style: const TextStyle(
+              fontSize: 32,
               color: Colors.white,
-              fontSize: 20,
               fontWeight: FontWeight.bold,
             ),
           ),
-          SizedBox(height: 4),
-          Text("Real-time Monitoring", style: TextStyle(color: Colors.white54)),
+
+          const SizedBox(height: 10),
+
+          Text(result["analysis"], style: const TextStyle(color: Colors.white)),
+
+          const SizedBox(height: 16),
+
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              mini("Temp", data.last['temperature'], "°C"),
+              mini("Gas", data.last['gas'], ""),
+              mini("Pressure", data.last['pressure'], "hPa"),
+            ],
+          ),
         ],
       ),
     );
   }
 
-  // ================= SENSOR LIST CARD =================
-  Widget sensorListCard(
+  Widget mini(String title, dynamic val, String unit) {
+    return Column(
+      children: [
+        Text(title, style: const TextStyle(color: Colors.white70)),
+        Text(
+          "$val$unit",
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ================= LORA =================
+  Widget loraCard() {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const LoraPage()),
+        );
+      },
+
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          gradient: const LinearGradient(
+            colors: [Color(0xFF1A1A1A), Color(0xFF140A0A)],
+          ),
+          border: Border.all(color: Colors.red.withOpacity(0.4)),
+        ),
+
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Icon(Icons.wifi, color: Colors.green),
+                ),
+                const CircleAvatar(radius: 5, backgroundColor: Colors.green),
+              ],
+            ),
+
+            const SizedBox(height: 20),
+
+            const Text(
+              "LoRa Connection",
+              style: TextStyle(color: Colors.white70),
+            ),
+
+            const SizedBox(height: 6),
+
+            const Text(
+              "Connected",
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ================= SENSOR =================
+  // ================= SENSOR =================
+  Widget sensorCard(
     String title,
     String value,
     IconData icon,
@@ -164,246 +274,65 @@ class _DataPageState extends State<DataPage> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 20),
+        width: double.infinity, // 🔥 FIX: FULL WIDTH
+        margin: const EdgeInsets.only(bottom: 18),
+        padding: const EdgeInsets.all(20),
 
-        // 🔥 GRADIENT BORDER
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(24),
+
           gradient: LinearGradient(
-            colors: [
-              Colors.redAccent.withOpacity(0.8),
-              Colors.deepOrange,
-              Colors.red.shade900,
-            ],
+            colors: [const Color(0xFF1A1A1A), color.withOpacity(0.25)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-        ),
 
-        padding: const EdgeInsets.all(1.5),
+          border: Border.all(color: color.withOpacity(0.4)),
 
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: cardColor,
-            borderRadius: BorderRadius.circular(22),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.redAccent.withOpacity(0.2),
-                blurRadius: 25,
-              ),
-            ],
-          ),
-
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ================= TOP ROW =================
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // ICON SENSOR
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: color.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(icon, color: color, size: 22),
-                  ),
-
-                  // 🔥 ICON NAVIGASI (INDIKASI BISA DIKLIK)
-                  const Icon(
-                    Icons.arrow_forward_ios,
-                    color: Colors.white30,
-                    size: 16,
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 16),
-
-              // ================= TITLE =================
-              Text(
-                title,
-                style: const TextStyle(color: Colors.white70, fontSize: 13),
-              ),
-
-              const SizedBox(height: 6),
-
-              // ================= VALUE =================
-              Text(
-                value,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ================= CONTENT =================
-  Widget buildContent(Map latest) {
-    return Column(
-      children: [
-        const SizedBox(height: 10),
-
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Column(
-            children: [
-              sensorListCard(
-                "Temperature",
-                format(latest['temperature'], suffix: "°C"),
-                Icons.thermostat,
-                Colors.orange,
-                () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => TemperaturePage(data: data),
-                    ),
-                  );
-                },
-              ),
-              sensorListCard(
-                "Gas",
-                format(latest['gas']),
-                Icons.cloud,
-                Colors.green,
-                () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => GasPage(data: data)),
-                  );
-                },
-              ),
-              sensorListCard(
-                "Pressure",
-                format(latest['pressure']),
-                Icons.speed,
-                Colors.blue,
-                () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => PressurePage(data: data)),
-                  );
-                },
-              ),
-            ],
-          ),
-        ),
-
-        const SizedBox(height: 20),
-
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: loraCard(latest),
-        ),
-
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: exportCard(context),
-        ),
-
-        const SizedBox(height: 30),
-      ],
-    );
-  }
-
-  // ================= LORA =================
-  Widget loraCard(Map latest) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-
-      // 🔥 GRADIENT BORDER
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        gradient: LinearGradient(
-          colors: [
-            Colors.redAccent.withOpacity(0.8),
-            Colors.deepOrange,
-            Colors.red.shade900,
+          boxShadow: [
+            BoxShadow(
+              color: color.withOpacity(0.3),
+              blurRadius: 20,
+              offset: const Offset(0, 6),
+            ),
           ],
-        ),
-      ),
-
-      padding: const EdgeInsets.all(1.5),
-
-      child: Container(
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          color: cardColor,
-          borderRadius: BorderRadius.circular(22),
         ),
 
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start, // 🔥 FIX
           children: [
-            // 🔥 TOP ROW
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                // ICON
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(Icons.wifi, color: Colors.green),
+            // 🔥 ICON (PASTI KIRI)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(14),
                 ),
-
-                // 🔥 TITIK HIJAU (STATUS)
-                Container(
-                  width: 10,
-                  height: 10,
-                  decoration: const BoxDecoration(
-                    color: Colors.green,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ],
+                child: Icon(icon, color: color),
+              ),
             ),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: 18),
 
-            // TITLE
-            const Text(
-              "LoRa Connection",
-              style: TextStyle(color: Colors.white70),
+            // 🔥 TITLE
+            Text(
+              title,
+              textAlign: TextAlign.left,
+              style: const TextStyle(color: Colors.white70, fontSize: 16),
             ),
 
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
 
-            // STATUS
-            const Text(
-              "Connected",
-              style: TextStyle(
+            // 🔥 VALUE
+            Text(
+              value,
+              textAlign: TextAlign.left,
+              style: const TextStyle(
                 color: Colors.white,
-                fontSize: 20,
+                fontSize: 32,
                 fontWeight: FontWeight.bold,
-              ),
-            ),
-
-            const SizedBox(height: 12),
-
-            // 🔥 BADGE
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const Text(
-                "Signal Strong",
-                style: TextStyle(color: Colors.green, fontSize: 12),
               ),
             ),
           ],
@@ -412,7 +341,8 @@ class _DataPageState extends State<DataPage> {
     );
   }
 
-  Widget exportCard(BuildContext context) {
+  // ================= EXPORT =================
+  Widget exportCard() {
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -421,57 +351,63 @@ class _DataPageState extends State<DataPage> {
         );
       },
       child: Container(
-        margin: const EdgeInsets.only(bottom: 20),
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: const EdgeInsets.all(18),
+
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(24),
-          gradient: LinearGradient(
-            colors: [
-              Colors.redAccent.withOpacity(0.8),
-              Colors.deepOrange,
-              Colors.red.shade900,
-            ],
+
+          // 🔥 DARK CARD
+          gradient: const LinearGradient(
+            colors: [Color(0xFF1A1A1A), Color(0xFF0F0F0F)],
           ),
+
+          border: Border.all(color: Colors.red.withOpacity(0.4)),
+
+          boxShadow: [
+            BoxShadow(color: Colors.red.withOpacity(0.25), blurRadius: 18),
+          ],
         ),
-        padding: const EdgeInsets.all(1.5),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: cardColor,
-            borderRadius: BorderRadius.circular(22),
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(Icons.download, color: Colors.blue),
+
+        child: Row(
+          children: [
+            // ICON BOX
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(14),
               ),
-              const SizedBox(width: 14),
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Export Data",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
+              child: const Icon(Icons.download, color: Colors.blue),
+            ),
+
+            const SizedBox(width: 14),
+
+            // TEXT
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Export Data",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
                     ),
-                    SizedBox(height: 4),
-                    Text(
-                      "Download sensor records",
-                      style: TextStyle(color: Colors.white70, fontSize: 12),
-                    ),
-                  ],
-                ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    "Download sensor records",
+                    style: TextStyle(color: Colors.white54, fontSize: 12),
+                  ),
+                ],
               ),
-              const Icon(Icons.arrow_forward, color: Colors.blue),
-            ],
-          ),
+            ),
+
+            // ARROW
+            const Icon(Icons.arrow_forward, color: Colors.blue),
+          ],
         ),
       ),
     );
@@ -480,108 +416,69 @@ class _DataPageState extends State<DataPage> {
   // ================= BUILD =================
   @override
   Widget build(BuildContext context) {
-    final latest = data.isNotEmpty ? data[0] as Map : {};
-    final status = getStatus(latest);
+    final latest = data.isNotEmpty ? data.last : {};
 
     return Scaffold(
       backgroundColor: bgColor,
       appBar: AppBar(
-        title: const Text(
-          "Merapi Monitor",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
+        title: const Text("Merapi Monitor"),
         backgroundColor: Colors.black,
-        centerTitle: true,
-        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: data.isEmpty
-          ? const Center(
-              child: Text(
-                "Tidak ada data",
-                style: TextStyle(color: Colors.white),
-              ),
-            )
-          : CustomScrollView(
-              slivers: [
-                SliverToBoxAdapter(child: buildHeader()),
-                SliverPersistentHeader(
-                  pinned: true,
-                  delegate: StatusHeaderDelegate(status: status),
-                ),
-                SliverToBoxAdapter(child: buildContent(latest)),
-              ],
-            ),
-    );
-  }
-}
-
-// ================= STICKY STATUS =================
-class StatusHeaderDelegate extends SliverPersistentHeaderDelegate {
-  final String status;
-
-  StatusHeaderDelegate({required this.status});
-
-  Color getStatusColor(String status) {
-    switch (status) {
-      case "SIAGA":
-        return Colors.red;
-      case "WASPADA":
-        return Colors.orange;
-      default:
-        return Colors.green;
-    }
-  }
-
-  @override
-  Widget build(
-    BuildContext context,
-    double shrinkOffset,
-    bool overlapsContent,
-  ) {
-    final color = getStatusColor(status);
-
-    return SizedBox.expand(
-      child: Container(
-        color: bgColor,
-        padding: const EdgeInsets.all(12),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            gradient: LinearGradient(
-              colors: [color.withOpacity(0.9), color.withOpacity(0.6)],
-            ),
-          ),
-          child: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
+          ? const Center(child: CircularProgressIndicator())
+          : ListView(
               children: [
-                const Text(
-                  "STATUS",
-                  style: TextStyle(color: Colors.white70, fontSize: 12),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  status,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
+                analysisCard(),
+                loraCard(),
+
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      sensorCard(
+                        "Temperature",
+                        format(latest['temperature'], suffix: "°C"),
+                        Icons.thermostat,
+                        Colors.orange,
+                        () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => TemperaturePage(data: data),
+                          ),
+                        ),
+                      ),
+                      sensorCard(
+                        "Gas",
+                        format(latest['gas']),
+                        Icons.cloud,
+                        Colors.green,
+                        () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => GasPage(data: data),
+                          ),
+                        ),
+                      ),
+                      sensorCard(
+                        "Pressure",
+                        format(latest['pressure']),
+                        Icons.speed,
+                        Colors.blue,
+                        () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => PressurePage(data: data),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
+
+                exportCard(),
+                const SizedBox(height: 30),
               ],
             ),
-          ),
-        ),
-      ),
     );
   }
-
-  @override
-  double get maxExtent => 110;
-
-  @override
-  double get minExtent => 110;
-
-  @override
-  bool shouldRebuild(covariant oldDelegate) => true;
 }
