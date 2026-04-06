@@ -11,6 +11,7 @@ import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'volcano_analyzer.dart';
 import 'lora_page.dart';
+import 'package:google_fonts/google_fonts.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await FlutterDownloader.initialize(debug: true);
@@ -150,25 +151,26 @@ class _DataPageState extends State<DataPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            "Volcano Analysis",
-            style: TextStyle(color: Colors.white70),
+          Text(
+            "VOLCANO ANALYSIS",
+            style: GoogleFonts.orbitron(color: Colors.white70, letterSpacing: 1.5, fontSize: 14,),
           ),
 
           const SizedBox(height: 10),
 
           Text(
             result["status"],
-            style: const TextStyle(
+            style: GoogleFonts.orbitron(
               fontSize: 32,
               color: Colors.white,
               fontWeight: FontWeight.bold,
+              letterSpacing: 2,
             ),
           ),
 
           const SizedBox(height: 10),
 
-          Text(result["analysis"], style: const TextStyle(color: Colors.white)),
+          Text(result["analysis"], style: GoogleFonts.rajdhani(color: Colors.white, fontSize: 14),),
 
           const SizedBox(height: 16),
 
@@ -188,12 +190,13 @@ class _DataPageState extends State<DataPage> {
   Widget mini(String title, dynamic val, String unit) {
     return Column(
       children: [
-        Text(title, style: const TextStyle(color: Colors.white70)),
+        Text(title, style: GoogleFonts.rajdhani(color: Colors.white70, fontSize: 12,)),
         Text(
           "$val$unit",
-          style: const TextStyle(
+          style: GoogleFonts.orbitron(
             color: Colors.white,
             fontWeight: FontWeight.bold,
+            fontSize: 14,
           ),
         ),
       ],
@@ -241,19 +244,22 @@ class _DataPageState extends State<DataPage> {
 
             const SizedBox(height: 20),
 
-            const Text(
+            Text(
               "LoRa Connection",
-              style: TextStyle(color: Colors.white70),
+              style: GoogleFonts.orbitron(
+                color: Colors.white70, fontSize: 12, 
+                letterSpacing: 1.5,),
             ),
 
             const SizedBox(height: 6),
 
-            const Text(
+            Text(
               "Connected",
-              style: TextStyle(
+              style: GoogleFonts.orbitron(
                 color: Colors.white,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
+                letterSpacing: 1.5,
               ),
             ),
           ],
@@ -320,7 +326,7 @@ class _DataPageState extends State<DataPage> {
             Text(
               title,
               textAlign: TextAlign.left,
-              style: const TextStyle(color: Colors.white70, fontSize: 16),
+              style: GoogleFonts.rajdhani(color: Colors.white70, fontSize: 16),
             ),
 
             const SizedBox(height: 8),
@@ -329,10 +335,11 @@ class _DataPageState extends State<DataPage> {
             Text(
               value,
               textAlign: TextAlign.left,
-              style: const TextStyle(
+              style: GoogleFonts.orbitron(
                 color: Colors.white,
                 fontSize: 32,
                 fontWeight: FontWeight.bold,
+                letterSpacing: 1.5,
               ),
             ),
           ],
@@ -384,22 +391,23 @@ class _DataPageState extends State<DataPage> {
             const SizedBox(width: 14),
 
             // TEXT
-            const Expanded(
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     "Export Data",
-                    style: TextStyle(
+                    style: GoogleFonts.orbitron(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
+                      letterSpacing: 1.5,
                     ),
                   ),
                   SizedBox(height: 4),
                   Text(
                     "Download sensor records",
-                    style: TextStyle(color: Colors.white54, fontSize: 12),
+                    style: GoogleFonts.rajdhani(color: Colors.white54, fontSize: 12),
                   ),
                 ],
               ),
@@ -421,9 +429,36 @@ class _DataPageState extends State<DataPage> {
     return Scaffold(
       backgroundColor: bgColor,
       appBar: AppBar(
-        title: const Text("Merapi Monitor"),
-        backgroundColor: Colors.black,
+        backgroundColor: const Color(0xFFE85D3A),
+        elevation: 0,
+        centerTitle: true,
+
+        title: Text(
+          "MERAPI MONITOR",
+          style: GoogleFonts.orbitron(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 2,
+            color: Colors.white,
+          ),
+        ),
+
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Color(0xFF4A0000),
+                Color(0xFF8B0000),
+                Color(0xFFB22222),
+                Color(0xFFFF3B3B),
+              ],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+          ),
+        ),
       ),
+      
       body: data.isEmpty
           ? const Center(child: CircularProgressIndicator())
           : ListView(

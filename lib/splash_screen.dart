@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'main.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -25,28 +26,67 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0D0D),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
-            Text("MERAPI |", style: TextStyle(fontSize: 60)),
-            SizedBox(height: 20),
-            Text(
-              "VOLKANIK AKTIFITAS MONITOR",
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 2,
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+
+        // 🔥 BACKGROUND MERAH MENYALA (clean)
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFF4A0000),
+              Color(0xFF8B0000),
+              Color(0xFFB22222),
+              Color(0xFFFF3B3B),
+            ],
+          ),
+        ),
+
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // 🔥 LOGO
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Image.asset("assets/images/merapinobg.png", width: 200),
               ),
-            ),
-            SizedBox(height: 5),
-            Text(
-              "Real-time Volcano Monitoring",
-              style: TextStyle(color: Colors.white54),
-            ),
-          ],
+
+              const SizedBox(height: 30),
+
+              // 🔴 TITLE (Orbitron)
+              Text(
+                "VOLCANIC SURVEILLANCE",
+                textAlign: TextAlign.center,
+                style: GoogleFonts.orbitron(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 2,
+                  color: Colors.white,
+                ),
+              ),
+
+              const SizedBox(height: 8),
+
+              // ⚙️ SUBTITLE (Rajdhani)
+              Text(
+                "REAL-TIME DATA • IOT • LORA",
+                style: GoogleFonts.rajdhani(
+                  fontSize: 13,
+                  letterSpacing: 2,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white70,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
