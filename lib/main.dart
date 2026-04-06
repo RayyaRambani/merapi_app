@@ -12,10 +12,16 @@ import 'package:permission_handler/permission_handler.dart';
 import 'volcano_analyzer.dart';
 import 'lora_page.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'notification_service.dart';
+import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await FlutterDownloader.initialize(debug: true);
   await Permission.storage.request();
+  await NotificationService.init();
   runApp(const MyApp());
 }
 
@@ -46,6 +52,7 @@ class DataPage extends StatefulWidget {
 class _DataPageState extends State<DataPage> {
   List data = [];
   Timer? timer;
+  Timer? dangerTimer;
 
   final String apiUrl =
       "https://merapi-backend-production.up.railway.app/api/v1/data";
@@ -62,18 +69,41 @@ class _DataPageState extends State<DataPage> {
 
   @override
   void dispose() {
-    timer?.cancel();
+    dangerTimer?.cancel();
     super.dispose();
   }
 
+  
   Future fetchData() async {
     try {
       final response = await http.get(Uri.parse(apiUrl));
+      print("Status:${response.statusCode}");
+      print("Body : ${response.body}");
+
 
       if (response.statusCode == 200) {
         setState(() {
-          data = jsonDecode(response.body);
+          data = List.from(jsonDecode(response.body));
         });
+
+        // 🔥 STEP 4 TARUH DI SINI (SETELAH setState)
+        final result = analyzer();
+
+        // 🔴 MODE ALARM (LOOP)
+        if (result["status"] == "DANGER") {
+          // kalau belum ada timer → mulai
+          if (dangerTimer == null) {
+            dangerTimer = Timer.periodic(Duration(seconds: 5), (_) {
+              NotificationService.showDangerNotification();
+            });
+          }
+        } else {
+          // kalau bukan danger → stop alarm
+          dangerTimer?.cancel();
+          dangerTimer = null;
+        }
+
+        
       }
     } catch (e) {
       print(e);
@@ -84,6 +114,15 @@ class _DataPageState extends State<DataPage> {
     if (value == null) return "-";
     return "${(value as num).toDouble().toStringAsFixed(1)}$suffix";
   }
+  //lastupdateicon//
+  String getLastUpdate() {
+    if (data.isEmpty) return "-";
+
+    final time = DateTime.parse(data.first['created_at']).toLocal();
+
+    return "${time.hour}:${time.minute}:${time.second}";
+  }
+
 
   // ================= ANALYZER =================
   Map analyzer() {
@@ -95,8 +134,8 @@ class _DataPageState extends State<DataPage> {
       };
     }
 
-    final last = data.last;
-    final prev = data[data.length - 2];
+    final last = data.first;
+    final prev = data.length > 1 ? data[1]:data.first;
 
     double temp = (last['temperature'] ?? 0).toDouble();
     double gas = (last['gas'] ?? 0).toDouble();
@@ -131,58 +170,276 @@ class _DataPageState extends State<DataPage> {
 
   // ================= ANALYSIS CARD =================
   Widget analysisCard() {
+    if (data.isEmpty){
+      return Center(child: CircularProgressIndicator());
+    }
     final result = analyzer();
+
+    bool isDanger = result["status"] == "DANGER";
 
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            result["color"].withOpacity(0.9),
-            result["color"].withOpacity(0.6),
-          ],
-        ),
         borderRadius: BorderRadius.circular(24),
+
+        // 🔥 GRADIENT LEBIH DALAM
+        gradient: LinearGradient(
+          colors: [result["color"].withOpacity(0.9), Colors.black],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+
+        // 🔥 GLOW LEBIH HIDUP
         boxShadow: [
-          BoxShadow(color: result["color"].withOpacity(0.4), blurRadius: 20),
+          BoxShadow(
+            color: result["color"].withOpacity(0.7),
+            blurRadius: isDanger ? 40 : 25,
+            spreadRadius: isDanger ? 3 : 1,
+          ),
         ],
       ),
+
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            "VOLCANO ANALYSIS",
-            style: GoogleFonts.orbitron(color: Colors.white70, letterSpacing: 1.5, fontSize: 14,),
+          // 🔴 HEADER + STATUS DOT
+          Row(
+            children: [
+              Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  color: result["color"],
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                "SYSTEM STATUS",
+                style: GoogleFonts.rajdhani(
+                  color: Colors.white70,
+                  fontSize: 12,
+                  letterSpacing: 1.5,
+                ),
+              ),
+            ],
           ),
 
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
 
+          // 🔥 STATUS BESAR
           Text(
             result["status"],
             style: GoogleFonts.orbitron(
-              fontSize: 32,
-              color: Colors.white,
+              fontSize: 36,
               fontWeight: FontWeight.bold,
-              letterSpacing: 2,
+              color: result["color"],
+              letterSpacing: 3,
             ),
           ),
 
           const SizedBox(height: 10),
 
-          Text(result["analysis"], style: GoogleFonts.rajdhani(color: Colors.white, fontSize: 14),),
+          // 🧠 ANALYSIS TEXT
+          Text(
+            result["analysis"],
+            style: GoogleFonts.rajdhani(color: Colors.white, fontSize: 14),
+          ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
 
+          // 📊 MINI DATA
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              mini("Temp", data.last['temperature'], "°C"),
-              mini("Gas", data.last['gas'], ""),
-              mini("Pressure", data.last['pressure'], "hPa"),
+              mini("Temp", data.first['temperature'], "°C"),
+              mini("Gas", data.first['gas'], ""),
+              mini("Pressure", data.first['pressure'], "hPa"),
             ],
           ),
         ],
+      ),
+    );
+  }
+
+////////MULTICHART////////
+  Widget buildMultiChart() {
+    if (data.isEmpty) return SizedBox();
+
+    final points = data.take(10).toList().reversed.toList();
+
+    List<FlSpot> tempSpots = [];
+    List<FlSpot> gasSpots = [];
+    List<FlSpot> pressureSpots = [];
+
+    for (int i = 0; i < points.length; i++) {
+      final d = points[i];
+
+      tempSpots.add(FlSpot(i.toDouble(), (d['temperature'] ?? 0).toDouble()));
+      gasSpots.add(FlSpot(i.toDouble(), (d['gas'] ?? 0).toDouble()));
+      pressureSpots.add(FlSpot(i.toDouble(), (d['pressure'] ?? 0).toDouble()));
+    }
+
+    return Container(
+      margin: EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        gradient: LinearGradient(
+          colors: [Color(0xFF1A1A1A), Color(0xFF0F0F0F)],
+        ),
+        border: Border.all(color: Colors.red.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "SENSOR TREND",
+            style: GoogleFonts.orbitron(color: Colors.white),
+          ),
+
+          SizedBox(height: 10),
+
+          // 🔥 LEGEND
+          Row(
+            children: [
+              legend("Temp", Colors.red),
+              SizedBox(width: 10),
+              legend("Gas", Colors.orange),
+              SizedBox(width: 10),
+              legend("Pressure", Colors.blue),
+            ],
+          ),
+
+          SizedBox(height: 10),
+
+          SizedBox(
+            height: 160,
+            child: LineChart(
+              LineChartData(
+                titlesData: FlTitlesData(show: false),
+                gridData: FlGridData(show: false),
+                borderData: FlBorderData(show: false),
+
+                lineBarsData: [
+                  // 🔴 TEMP
+                  LineChartBarData(
+                    spots: tempSpots,
+                    isCurved: true,
+                    color: Colors.red,
+                    barWidth: 3,
+                    dotData: FlDotData(show: false),
+                  ),
+
+                  // 🟠 GAS
+                  LineChartBarData(
+                    spots: gasSpots,
+                    isCurved: true,
+                    color: Colors.orange,
+                    barWidth: 3,
+                    dotData: FlDotData(show: false),
+                  ),
+
+                  // 🔵 PRESSURE
+                  LineChartBarData(
+                    spots: pressureSpots,
+                    isCurved: true,
+                    color: Colors.blue,
+                    barWidth: 3,
+                    dotData: FlDotData(show: false),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  Widget legend(String text, Color color) {
+    return Row(
+      children: [
+        Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        SizedBox(width: 5),
+        Text(
+          text,
+          style: GoogleFonts.rajdhani(color: Colors.white70, fontSize: 12),
+        ),
+      ],
+    );
+  }
+
+  Widget buildLog() {
+    return Container(
+      margin: EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        gradient: LinearGradient(
+          colors: [Color(0xFF1A1A1A), Color(0xFF0F0F0F)],
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text("DATA LOG", style: GoogleFonts.orbitron(color: Colors.white)),
+          SizedBox(height: 10),
+          ...data
+              .take(5)
+              .map(
+                (d) => Text(
+                  "${d['temperature']}°C | Gas ${d['gas']} | ${d['pressure']} hPa",
+                  style: GoogleFonts.rajdhani(color: Colors.white70),
+                ),
+              ),
+        ],
+      ),
+    );
+  }
+
+  Widget buildMap() {
+    if (data.isEmpty) return SizedBox();
+
+    final lat = data.first['lat'];
+    final lon = data.first['lon'];
+
+    return Container(
+      margin: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.red.withOpacity(0.3)),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: SizedBox(
+          height: 200,
+          child: FlutterMap(
+            options: MapOptions(
+              initialCenter: LatLng(lat, lon),
+              initialZoom: 10,
+            ),
+            children: [
+              TileLayer(
+                urlTemplate: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+                userAgentPackageName:'com.example.merapi_app',
+                subdomains:['a','b','c','d'],
+              ),
+              MarkerLayer(
+                markers: [
+                  Marker(
+                    point: LatLng(lat, lon),
+                    child: Icon(Icons.location_on, color: Colors.red, size: 30),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -424,7 +681,7 @@ class _DataPageState extends State<DataPage> {
   // ================= BUILD =================
   @override
   Widget build(BuildContext context) {
-    final latest = data.isNotEmpty ? data.last : {};
+    final latest = data.isNotEmpty ? data.first : {};
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -434,7 +691,7 @@ class _DataPageState extends State<DataPage> {
         centerTitle: true,
 
         title: Text(
-          "MERAPI MONITOR",
+          "VULCANO SURVEILLANCE",
           style: GoogleFonts.orbitron(
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -463,6 +720,16 @@ class _DataPageState extends State<DataPage> {
           ? const Center(child: CircularProgressIndicator())
           : ListView(
               children: [
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  child: Text(
+                    "Last Update: ${getLastUpdate()}",
+                    style: GoogleFonts.rajdhani(
+                      color: Colors.white54,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
                 analysisCard(),
                 loraCard(),
 
@@ -509,6 +776,14 @@ class _DataPageState extends State<DataPage> {
                     ],
                   ),
                 ),
+
+                // 📈 CHART
+              buildMultiChart(),
+                // 📜 LOG
+                buildLog(),
+
+                // 📍 MAP
+                buildMap(),
 
                 exportCard(),
                 const SizedBox(height: 30),

@@ -15,7 +15,7 @@ class LoraPage extends StatelessWidget {
         title: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("LoRa Connection"),
+            Text("LoRa Connection", style: TextStyle(color: Colors.white)),
             Text(
               "Network status",
               style: TextStyle(fontSize: 12, color: Colors.white54),
