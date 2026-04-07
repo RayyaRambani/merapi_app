@@ -64,6 +64,14 @@ class TemperaturePage extends StatelessWidget {
       return "Temperature indicates dangerous volcanic activity.";
     }
   }
+  double getUpdateRate() {
+    if (data.length < 2) return 0;
+
+    DateTime t1 = DateTime.parse(data[0]['created_at']);
+    DateTime t2 = DateTime.parse(data[1]['created_at']);
+
+    return t1.difference(t2).inSeconds.toDouble();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -290,14 +298,14 @@ class TemperaturePage extends StatelessWidget {
                   child: card(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
+                      children: [
                         Text(
                           "Update Rate",
                           style: TextStyle(color: Colors.white70),
                         ),
                         SizedBox(height: 6),
                         Text(
-                          "3s",
+                          "${getUpdateRate().toStringAsFixed(0)}s",
                           style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
