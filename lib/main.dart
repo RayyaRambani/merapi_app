@@ -53,6 +53,7 @@ class _DataPageState extends State<DataPage> {
   List data = [];
   Timer? timer;
   Timer? dangerTimer;
+ // detik
 
   final String apiUrl =
       "https://merapi-backend-production.up.railway.app/api/v1/data";
