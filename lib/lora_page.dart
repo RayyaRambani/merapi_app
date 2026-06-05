@@ -4,14 +4,40 @@ const bgColor = Color(0xFF0D0D0D);
 const cardColor = Color(0xFF1A1A1A);
 
 class LoraPage extends StatelessWidget {
-  const LoraPage({super.key});
+  final List data;
+
+  const LoraPage({super.key, required this.data});
 
   @override
   Widget build(BuildContext context) {
+
+    final latest = data.isNotEmpty ? data.first : {};
+
+    final int rssi = (latest['rssi'] ?? 0).toInt();
+
+    final double snr = (latest['snr'] ?? 0).toDouble();
+
+    final createdAt = latest.isNotEmpty
+        ? DateTime.parse(latest['created_at']).toLocal()
+        : DateTime.now();
+
+    final bool connected = DateTime.now().difference(createdAt).inSeconds < 15;
+
+    String quality = "Poor";
+
+    if (rssi > -70) {
+      quality = "Excellent";
+    } else if (rssi > -90) {
+      quality = "Good";
+    } else if (rssi > -110) {
+      quality = "Fair";
+    }
+
     return Scaffold(
       backgroundColor: bgColor,
       appBar: AppBar(
         backgroundColor: Colors.black,
+        iconTheme: IconThemeData(color: Colors.white),
         title: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -28,7 +54,12 @@ class LoraPage extends StatelessWidget {
           const SizedBox(height: 10),
 
           // ================= STATUS =================
-          connectionCard(),
+          connectionCard(
+            connected,
+            rssi,
+            snr,
+            quality,
+          ),
 
           // ================= SIGNAL =================
           sectionCard(
@@ -36,9 +67,12 @@ class LoraPage extends StatelessWidget {
             child: Column(
               children: [
                 const SizedBox(height: 40),
-                const Text(
-                  "87% - Excellent",
-                  style: TextStyle(color: Colors.green),
+                Text(
+                  "$rssi dBm - $quality",
+                  style: TextStyle(
+                    color: connected ? Colors.green : Colors.red,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 40),
               ],
@@ -63,24 +97,15 @@ class LoraPage extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                Expanded(
-                  child: smallCard("Packets Sent", "12,466", Colors.green),
-                ),
+                Expanded(child: smallCard("RSSI", "$rssi dBm", Colors.green)),
                 const SizedBox(width: 12),
-                Expanded(child: smallCard("Packets Lost", "23", Colors.orange)),
-              ],
-            ),
-          ),
-
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
                 Expanded(
-                  child: smallCard("Success Rate", "99.82%", Colors.green),
+                  child: smallCard(
+                    "SNR",
+                    "${snr.toStringAsFixed(2)} dB",
+                    Colors.blue,
+                  ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(child: smallCard("Uptime", "47d 13h", Colors.blue)),
               ],
             ),
           ),
@@ -92,17 +117,11 @@ class LoraPage extends StatelessWidget {
             item("Frequency", "915 MHz"),
             item("Bandwidth", "125 kHz"),
             item("Spreading Factor", "SF7"),
-            item("Coding Rate", "4/5"),
-            item("TX Power", "14 dBm"),
-            item("Range", "~15 km"),
+            item("TX Power", "17 dBm"),
+            item("Node ID", "node_1"),
           ]),
 
-          // ================= DEVICE =================
-          infoCard("Device Information", [
-            item("Gateway ID", "VLC-GW-001-A3F2"),
-            item("Node Address", "0x26041A7B"),
-            item("Network Session", "Active - Encrypted"),
-          ]),
+
 
           const SizedBox(height: 30),
         ],
@@ -111,17 +130,16 @@ class LoraPage extends StatelessWidget {
   }
 
   // ================= CONNECTION CARD =================
-  Widget connectionCard() {
+  Widget connectionCard(bool connected, int rssi, double snr, String quality) {
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
         gradient: LinearGradient(
-          colors: [
-            Colors.green.withOpacity(0.9),
-            Colors.green.withOpacity(0.6),
-          ],
+          colors: connected
+              ? [Colors.green.withOpacity(0.9), Colors.green.withOpacity(0.6)]
+              : [Colors.red.withOpacity(0.9), Colors.red.withOpacity(0.6)],
         ),
       ),
       child: Column(
@@ -129,20 +147,23 @@ class LoraPage extends StatelessWidget {
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
-              Text(
+            children: [
+              const Text(
                 "Connection Status",
                 style: TextStyle(color: Colors.white70),
               ),
-              Icon(Icons.check_circle, color: Colors.white),
+              Icon(
+                connected ? Icons.check_circle : Icons.cancel,
+                color: Colors.white,
+              ),
             ],
           ),
 
           const SizedBox(height: 10),
 
-          const Text(
-            "Connected",
-            style: TextStyle(
+          Text(
+            connected ? "Connected" : "Disconnected",
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 26,
               fontWeight: FontWeight.bold,
@@ -154,9 +175,9 @@ class LoraPage extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              column("Signal", "87%"),
-              column("Quality", "Excellent"),
-              column("Rate", "5.47 kbps"),
+              column("RSSI", "$rssi dBm"),
+              column("Quality", quality),
+              column("SNR", snr.toStringAsFixed(1)),
             ],
           ),
         ],

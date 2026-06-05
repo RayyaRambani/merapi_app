@@ -467,7 +467,7 @@ class _DataPageState extends State<DataPage> {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const LoraPage()),
+          MaterialPageRoute(builder: (_) => LoraPage(data: data)),
         );
       },
 
@@ -505,8 +505,10 @@ class _DataPageState extends State<DataPage> {
             Text(
               "LoRa Connection",
               style: GoogleFonts.orbitron(
-                color: Colors.white70, fontSize: 12, 
-                letterSpacing: 1.5,),
+                color: Colors.white70,
+                fontSize: 12,
+                letterSpacing: 1.5,
+              ),
             ),
 
             const SizedBox(height: 6),

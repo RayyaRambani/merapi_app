@@ -10,22 +10,25 @@ class VolcanoAnalyzer {
     required double prevGas,
     required double prevPressure,
   }) {
-    bool tempUp = temp > prevTemp;
-    bool gasUp = gas > prevGas;
-    bool pressureUp = pressure > prevPressure;
-
-    if (tempUp && gasUp && pressureUp) {
+    // 🔴 1. NILAI EKSTRIM (langsung danger)
+    if (temp > 150 || gas > 300 || pressure > 1200) {
       return "DANGER";
     }
 
-    if (tempUp && gasUp) {
+    // ⚠️ 2. NILAI MENENGAH
+    if (temp > 70 || gas > 100 || pressure < 900) {
       return "SIAGA";
     }
 
-    if (tempUp) {
+    // 🟡 3. TREND (baru pakai kenaikan)
+    bool tempUp = temp > prevTemp;
+    bool gasUp = gas > prevGas;
+
+    if (tempUp && gasUp) {
       return "WASPADA";
     }
 
+    // ✅ 4. AMAN
     return "SAFE";
   }
 
@@ -54,22 +57,26 @@ class VolcanoAnalyzer {
     required double prevGas,
     required double prevPressure,
   }) {
-    bool tempUp = temp > prevTemp;
-    bool gasUp = gas > prevGas;
-    bool pressureUp = pressure > prevPressure;
-
-    if (tempUp && gasUp && pressureUp) {
-      return "Temperature, gas, and pressure are all increasing. This indicates magma movement and high eruption potential.";
+    if (temp > 150) {
+      return "Extreme temperature detected. High volcanic activity.";
     }
 
-    if (tempUp && gasUp && !pressureUp) {
-      return "Temperature and gas are increasing, but pressure is decreasing. Possible gas release is occurring.";
+    if (gas > 300) {
+      return "High gas concentration detected. Possible magma release.";
     }
 
-    if (tempUp && !gasUp) {
-      return "Temperature rising without significant gas increase. Early volcanic activity suspected.";
+    if (pressure > 1200) {
+      return "Pressure anomaly detected.";
     }
 
-    return "All parameters are stable. No significant volcanic activity detected.";
+    if (temp > 70 && gas > 100) {
+      return "Increasing temperature and gas indicate rising volcanic activity.";
+    }
+
+    if (temp > prevTemp) {
+      return "Temperature is increasing. Early activity suspected.";
+    }
+
+    return "All parameters are stable.";
   }
 }
