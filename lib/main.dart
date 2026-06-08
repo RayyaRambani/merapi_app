@@ -53,7 +53,7 @@ class _DataPageState extends State<DataPage> {
   List data = [];
   Timer? timer;
   Timer? dangerTimer;
- // detik
+  // detik
 
   final String apiUrl =
       "https://merapi-backend-production.up.railway.app/api/v1/data";
@@ -74,13 +74,11 @@ class _DataPageState extends State<DataPage> {
     super.dispose();
   }
 
-  
   Future fetchData() async {
     try {
       final response = await http.get(Uri.parse(apiUrl));
       print("Status:${response.statusCode}");
       print("Body : ${response.body}");
-
 
       if (response.statusCode == 200) {
         setState(() {
@@ -103,8 +101,6 @@ class _DataPageState extends State<DataPage> {
           dangerTimer?.cancel();
           dangerTimer = null;
         }
-
-        
       }
     } catch (e) {
       print(e);
@@ -115,6 +111,7 @@ class _DataPageState extends State<DataPage> {
     if (value == null) return "-";
     return "${(value as num).toDouble().toStringAsFixed(1)}$suffix";
   }
+
   //lastupdateicon//
   String getLastUpdate() {
     if (data.isEmpty) return "-";
@@ -123,7 +120,6 @@ class _DataPageState extends State<DataPage> {
 
     return "${time.hour}:${time.minute}:${time.second}";
   }
-
 
   // ================= ANALYZER =================
   Map analyzer() {
@@ -136,7 +132,7 @@ class _DataPageState extends State<DataPage> {
     }
 
     final last = data.first;
-    final prev = data.length > 1 ? data[1]:data.first;
+    final prev = data.length > 1 ? data[1] : data.first;
 
     double temp = (last['temperature'] ?? 0).toDouble();
     double gas = (last['gas'] ?? 0).toDouble();
@@ -171,7 +167,7 @@ class _DataPageState extends State<DataPage> {
 
   // ================= ANALYSIS CARD =================
   Widget analysisCard() {
-    if (data.isEmpty){
+    if (data.isEmpty) {
       return Center(child: CircularProgressIndicator());
     }
     final result = analyzer();
@@ -264,7 +260,7 @@ class _DataPageState extends State<DataPage> {
     );
   }
 
-////////MULTICHART////////
+  ////////MULTICHART////////
   Widget buildMultiChart() {
     if (data.isEmpty) return SizedBox();
 
@@ -358,6 +354,7 @@ class _DataPageState extends State<DataPage> {
       ),
     );
   }
+
   Widget legend(String text, Color color) {
     return Row(
       children: [
@@ -406,8 +403,10 @@ class _DataPageState extends State<DataPage> {
   Widget buildMap() {
     if (data.isEmpty) return SizedBox();
 
-    final lat = data.first['lat'];
-    final lon = data.first['lon'];
+    final latest = data.first;
+
+    final double lat = (latest['lat'] as num?)?.toDouble() ?? 0.0;
+    final double lon = (latest['lon'] as num?)?.toDouble() ?? 0.0;
 
     return Container(
       margin: EdgeInsets.all(16),
@@ -427,8 +426,8 @@ class _DataPageState extends State<DataPage> {
             children: [
               TileLayer(
                 urlTemplate: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-                userAgentPackageName:'com.example.merapi_app',
-                subdomains:['a','b','c','d'],
+                userAgentPackageName: 'com.example.merapi_app',
+                subdomains: ['a', 'b', 'c', 'd'],
               ),
               MarkerLayer(
                 markers: [
@@ -448,7 +447,10 @@ class _DataPageState extends State<DataPage> {
   Widget mini(String title, dynamic val, String unit) {
     return Column(
       children: [
-        Text(title, style: GoogleFonts.rajdhani(color: Colors.white70, fontSize: 12,)),
+        Text(
+          title,
+          style: GoogleFonts.rajdhani(color: Colors.white70, fontSize: 12),
+        ),
         Text(
           "$val$unit",
           style: GoogleFonts.orbitron(
@@ -667,7 +669,10 @@ class _DataPageState extends State<DataPage> {
                   SizedBox(height: 4),
                   Text(
                     "Download sensor records",
-                    style: GoogleFonts.rajdhani(color: Colors.white54, fontSize: 12),
+                    style: GoogleFonts.rajdhani(
+                      color: Colors.white54,
+                      fontSize: 12,
+                    ),
                   ),
                 ],
               ),
@@ -718,7 +723,7 @@ class _DataPageState extends State<DataPage> {
           ),
         ),
       ),
-      
+
       body: data.isEmpty
           ? const Center(child: CircularProgressIndicator())
           : ListView(
@@ -781,7 +786,7 @@ class _DataPageState extends State<DataPage> {
                 ),
 
                 // 📈 CHART
-              buildMultiChart(),
+                buildMultiChart(),
                 // 📜 LOG
                 buildLog(),
 

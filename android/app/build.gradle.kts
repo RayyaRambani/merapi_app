@@ -8,7 +8,7 @@ plugins {
 android {
     namespace = "com.example.merapi_app"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    ndkVersion = "26.3.11579264"
 
     compileOptions {
         isCoreLibraryDesugaringEnabled = true

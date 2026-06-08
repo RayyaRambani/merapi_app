@@ -22,8 +22,9 @@ class TemperaturePage extends StatelessWidget {
     return spots;
   }
 
-  double getCurrent() =>
-      data.isNotEmpty ? (data.last['temperature'] ?? 0).toDouble() : 0;
+  double getCurrent() => data.isNotEmpty
+      ? (data.first['temperature'] as num?)?.toDouble() ?? 0
+      : 0;
 
   double getMin() => data.isNotEmpty
       ? data
@@ -44,26 +45,29 @@ class TemperaturePage extends StatelessWidget {
   }
 
   String getStatus(double val) {
-    if (val < 850) return "Safe";
-    if (val <= 900) return "Elevated";
-    return "Danger";
+    if (val < 30) return "Normal";
+    if (val <= 40) return "Elevated";
+    return "High";
   }
 
   Color getColor(double val) {
-    if (val < 850) return Colors.green;
-    if (val <= 900) return Colors.orange;
+    if (val < 30) return Colors.green;
+    if (val <= 40) return Colors.orange;
     return Colors.red;
   }
 
-  String getAnalysis(double val) {
-    if (val < 850) {
-      return "Temperature is stable and within safe limits.";
-    } else if (val <= 900) {
-      return "Temperature shows increasing volcanic activity. Monitoring required.";
-    } else {
-      return "Temperature indicates dangerous volcanic activity.";
+  String getAnalysis(double temp, double hum) {
+    if (temp < 30 && hum < 80) {
+      return "Environmental conditions are stable. No significant thermal anomaly detected.";
     }
+
+    if (temp < 40) {
+      return "Temperature shows an increasing trend and should be monitored.";
+    }
+
+    return "Significant thermal anomaly detected. Further investigation is recommended.";
   }
+
   double getUpdateRate() {
     if (data.length < 2) return 0;
 
@@ -73,10 +77,17 @@ class TemperaturePage extends StatelessWidget {
     return t1.difference(t2).inSeconds.toDouble();
   }
 
+  double getHumidity() {
+    if (data.isEmpty) return 0;
+
+    return (data.first['humidity'] as num?)?.toDouble() ?? 0;
+  }
+
   @override
   Widget build(BuildContext context) {
     final current = getCurrent();
     final spots = getChart();
+    final humidity = getHumidity();
 
     if (data.isEmpty) {
       return const Scaffold(
@@ -96,7 +107,7 @@ class TemperaturePage extends StatelessWidget {
         backgroundColor: Colors.black,
         iconTheme: const IconThemeData(color: Colors.white),
         title: const Text(
-          "Temperature Sensor",
+          "Environmental Conditions",
           style: TextStyle(color: Colors.white),
         ),
       ),
@@ -117,25 +128,36 @@ class TemperaturePage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    "Current Temperature",
+                    "Environmental Conditions",
                     style: TextStyle(color: Colors.white70),
                   ),
+
                   const SizedBox(height: 8),
+
                   Text(
-                    "${current.toStringAsFixed(0)}°C",
+                    "${current.toStringAsFixed(1)}°C",
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 40,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
+
+                  const SizedBox(height: 8),
+
+                  Text(
+                    "Humidity : ${humidity.toStringAsFixed(1)}%",
+                    style: const TextStyle(color: Colors.white70, fontSize: 18),
+                  ),
+
                   const SizedBox(height: 20),
+
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      mini("Avg", getAvg()),
-                      mini("Max", getMax()),
-                      mini("Min", getMin()),
+                      mini("Avg Temp", getAvg()),
+                      miniHumidity("Humidity", humidity),
+                      statusMini(current),
                     ],
                   ),
                 ],
@@ -347,7 +369,7 @@ class TemperaturePage extends StatelessWidget {
                   const Text("Analysis", style: TextStyle(color: Colors.white)),
                   const SizedBox(height: 10),
                   Text(
-                    getAnalysis(current),
+                    getAnalysis(current, humidity),
                     style: const TextStyle(color: Colors.white70),
                   ),
                 ],
@@ -377,9 +399,32 @@ class TemperaturePage extends StatelessWidget {
       children: [
         Text(t, style: const TextStyle(color: Colors.white70)),
         const SizedBox(height: 6),
+        Text(v.toStringAsFixed(1), style: const TextStyle(color: Colors.white)),
+      ],
+    );
+  }
+
+  Widget miniHumidity(String title, double value) {
+    return Column(
+      children: [
+        Text(title, style: const TextStyle(color: Colors.white70)),
+        const SizedBox(height: 6),
         Text(
-          "${v.toStringAsFixed(0)}°C",
+          "${value.toStringAsFixed(1)}%",
           style: const TextStyle(color: Colors.white),
+        ),
+      ],
+    );
+  }
+
+  Widget statusMini(double temp) {
+    return Column(
+      children: [
+        const Text("Status", style: TextStyle(color: Colors.white70)),
+        const SizedBox(height: 6),
+        Text(
+          getStatus(temp),
+          style: TextStyle(color: getColor(temp), fontWeight: FontWeight.bold),
         ),
       ],
     );

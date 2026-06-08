@@ -27,18 +27,23 @@ class _ExportPageState extends State<ExportPage> {
     try {
       final dir = await getExternalStorageDirectory();
 
-      if (dir == null) throw Exception("Storage tidak ditemukan");
+      if (dir == null) {
+        throw Exception("Storage tidak ditemukan");
+      }
 
       await FlutterDownloader.enqueue(
         url: url,
-        savedDir: dir.path, // 🔥 SAFE PATH
+        savedDir: dir.path,
         fileName: "merapi_data_${DateTime.now().millisecondsSinceEpoch}.csv",
         showNotification: true,
         openFileFromNotification: true,
       );
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Download dimulai ke: ${dir.path}")),
+        SnackBar(
+          duration: const Duration(seconds: 5),
+          content: Text("File disimpan di:\n${dir.path}"),
+        ),
       );
     } catch (e) {
       ScaffoldMessenger.of(
@@ -279,6 +284,27 @@ class _ExportPageState extends State<ExportPage> {
                     ),
                     const SizedBox(height: 16),
                     exportButton("Export Data"),
+                    const SizedBox(height: 12),
+
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () async {
+                          final dir = await getExternalStorageDirectory();
+
+                          if (dir == null) return;
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              duration: const Duration(seconds: 8),
+                              content: Text("Lokasi file:\n${dir.path}"),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.folder),
+                        label: const Text("Lihat Lokasi File"),
+                      ),
+                    ),
                   ],
 
                   if (selectedFilter == "week") ...[
@@ -342,5 +368,7 @@ class _ExportPageState extends State<ExportPage> {
         ),
       ),
     );
+  
   }
+  
 }
