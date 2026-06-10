@@ -61,49 +61,20 @@ class LoraPage extends StatelessWidget {
             quality,
           ),
 
-          // ================= SIGNAL =================
-          sectionCard(
-            "Signal Strength",
-            child: Column(
-              children: [
-                const SizedBox(height: 40),
-                Text(
-                  "$rssi dBm - $quality",
-                  style: TextStyle(
-                    color: connected ? Colors.green : Colors.red,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 40),
-              ],
-            ),
-          ),
-
-          // ================= HISTORY =================
-          sectionCard(
-            "Signal History",
-            child: Container(
-              height: 120,
-              alignment: Alignment.center,
-              child: const Text(
-                "Chart Placeholder",
-                style: TextStyle(color: Colors.white54),
-              ),
-            ),
-          ),
+          
 
           // ================= METRICS =================
           Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                Expanded(child: smallCard("RSSI", "$rssi dBm", Colors.green)),
+                Expanded(child: smallCard("RSSI", "$rssi dBm", Colors.orange)),
                 const SizedBox(width: 12),
                 Expanded(
                   child: smallCard(
                     "SNR",
                     "${snr.toStringAsFixed(2)} dB",
-                    Colors.blue,
+                    Colors.cyan,
                   ),
                 ),
               ],
@@ -113,12 +84,12 @@ class LoraPage extends StatelessWidget {
           const SizedBox(height: 20),
 
           // ================= NETWORK =================
-          infoCard("Network Information", [
+          infoCard("LoRa Information", [
             item("Frequency", "915 MHz"),
             item("Bandwidth", "125 kHz"),
             item("Spreading Factor", "SF7"),
             item("TX Power", "17 dBm"),
-            item("Node ID", "node_1"),
+            // item("Node ID", "node_1"),
           ]),
 
 
@@ -186,28 +157,7 @@ class LoraPage extends StatelessWidget {
   }
 
   // ================= SECTION CARD =================
-  Widget sectionCard(String title, {required Widget child}) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.green.withOpacity(0.3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(color: Colors.white, fontSize: 16),
-          ),
-          const SizedBox(height: 12),
-          child,
-        ],
-      ),
-    );
-  }
+  
 
   // ================= SMALL CARD =================
   Widget smallCard(String title, String value, Color color) {

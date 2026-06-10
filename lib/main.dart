@@ -261,99 +261,99 @@ class _DataPageState extends State<DataPage> {
   }
 
   ////////MULTICHART////////
-  Widget buildMultiChart() {
-    if (data.isEmpty) return SizedBox();
+  // Widget buildMultiChart() {
+  //   if (data.isEmpty) return SizedBox();
 
-    final points = data.take(10).toList().reversed.toList();
+  //   final points = data.take(10).toList().reversed.toList();
 
-    List<FlSpot> tempSpots = [];
-    List<FlSpot> gasSpots = [];
-    List<FlSpot> pressureSpots = [];
+  //   List<FlSpot> tempSpots = [];
+  //   List<FlSpot> gasSpots = [];
+  //   List<FlSpot> pressureSpots = [];
 
-    for (int i = 0; i < points.length; i++) {
-      final d = points[i];
+  //   for (int i = 0; i < points.length; i++) {
+  //     final d = points[i];
 
-      tempSpots.add(FlSpot(i.toDouble(), (d['temperature'] ?? 0).toDouble()));
-      gasSpots.add(FlSpot(i.toDouble(), (d['gas'] ?? 0).toDouble()));
-      pressureSpots.add(FlSpot(i.toDouble(), (d['pressure'] ?? 0).toDouble()));
-    }
+  //     tempSpots.add(FlSpot(i.toDouble(), (d['temperature'] ?? 0).toDouble()));
+  //     gasSpots.add(FlSpot(i.toDouble(), (d['gas'] ?? 0).toDouble()));
+  //     pressureSpots.add(FlSpot(i.toDouble(), (d['pressure'] ?? 0).toDouble()));
+  //   }
 
-    return Container(
-      margin: EdgeInsets.all(16),
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        gradient: LinearGradient(
-          colors: [Color(0xFF1A1A1A), Color(0xFF0F0F0F)],
-        ),
-        border: Border.all(color: Colors.red.withOpacity(0.3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            "SENSOR TREND",
-            style: GoogleFonts.orbitron(color: Colors.white),
-          ),
+  //   return Container(
+  //     margin: EdgeInsets.all(16),
+  //     padding: EdgeInsets.all(16),
+  //     decoration: BoxDecoration(
+  //       borderRadius: BorderRadius.circular(24),
+  //       gradient: LinearGradient(
+  //         colors: [Color(0xFF1A1A1A), Color(0xFF0F0F0F)],
+  //       ),
+  //       border: Border.all(color: Colors.red.withOpacity(0.3)),
+  //     ),
+  //     child: Column(
+  //       crossAxisAlignment: CrossAxisAlignment.start,
+  //       children: [
+  //         Text(
+  //           "SENSOR TREND",
+  //           style: GoogleFonts.orbitron(color: Colors.white),
+  //         ),
 
-          SizedBox(height: 10),
+  //         SizedBox(height: 10),
 
-          // 🔥 LEGEND
-          Row(
-            children: [
-              legend("Temp", Colors.red),
-              SizedBox(width: 10),
-              legend("Gas", Colors.orange),
-              SizedBox(width: 10),
-              legend("Pressure", Colors.blue),
-            ],
-          ),
+  //         // 🔥 LEGEND
+  //         Row(
+  //           children: [
+  //             legend("Temp", Colors.red),
+  //             SizedBox(width: 10),
+  //             legend("Gas", Colors.orange),
+  //             SizedBox(width: 10),
+  //             legend("Pressure", Colors.blue),
+  //           ],
+  //         ),
 
-          SizedBox(height: 10),
+  //         SizedBox(height: 10),
 
-          SizedBox(
-            height: 160,
-            child: LineChart(
-              LineChartData(
-                titlesData: FlTitlesData(show: false),
-                gridData: FlGridData(show: false),
-                borderData: FlBorderData(show: false),
+  //         SizedBox(
+  //           height: 160,
+  //           child: LineChart(
+  //             LineChartData(
+  //               titlesData: FlTitlesData(show: false),
+  //               gridData: FlGridData(show: false),
+  //               borderData: FlBorderData(show: false),
 
-                lineBarsData: [
-                  // 🔴 TEMP
-                  LineChartBarData(
-                    spots: tempSpots,
-                    isCurved: true,
-                    color: Colors.red,
-                    barWidth: 3,
-                    dotData: FlDotData(show: false),
-                  ),
+  //               lineBarsData: [
+  //                 // 🔴 TEMP
+  //                 LineChartBarData(
+  //                   spots: tempSpots,
+  //                   isCurved: true,
+  //                   color: Colors.red,
+  //                   barWidth: 3,
+  //                   dotData: FlDotData(show: false),
+  //                 ),
 
-                  // 🟠 GAS
-                  LineChartBarData(
-                    spots: gasSpots,
-                    isCurved: true,
-                    color: Colors.orange,
-                    barWidth: 3,
-                    dotData: FlDotData(show: false),
-                  ),
+  //                 // 🟠 GAS
+  //                 LineChartBarData(
+  //                   spots: gasSpots,
+  //                   isCurved: true,
+  //                   color: Colors.orange,
+  //                   barWidth: 3,
+  //                   dotData: FlDotData(show: false),
+  //                 ),
 
-                  // 🔵 PRESSURE
-                  LineChartBarData(
-                    spots: pressureSpots,
-                    isCurved: true,
-                    color: Colors.blue,
-                    barWidth: 3,
-                    dotData: FlDotData(show: false),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  //                 // 🔵 PRESSURE
+  //                 LineChartBarData(
+  //                   spots: pressureSpots,
+  //                   isCurved: true,
+  //                   color: Colors.blue,
+  //                   barWidth: 3,
+  //                   dotData: FlDotData(show: false),
+  //                 ),
+  //               ],
+  //             ),
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   Widget legend(String text, Color color) {
     return Row(
@@ -463,6 +463,62 @@ class _DataPageState extends State<DataPage> {
     );
   }
 
+  Widget miniSensorCard(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+    VoidCallback onTap,
+  ) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          height: 180,
+          margin: const EdgeInsets.symmetric(horizontal: 4),
+          padding: const EdgeInsets.all(16),
+
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            gradient: LinearGradient(
+              colors: [const Color(0xFF1A1A1A), color.withOpacity(0.25)],
+            ),
+            border: Border.all(color: color.withOpacity(0.4)),
+          ),
+
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: color),
+              ),
+
+              const Spacer(),
+
+              Text(title, style: GoogleFonts.rajdhani(color: Colors.white70)),
+
+              const SizedBox(height: 8),
+
+              Text(
+                value,
+                style: GoogleFonts.orbitron(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   // ================= LORA =================
   Widget loraCard() {
     return GestureDetector(
@@ -543,7 +599,7 @@ class _DataPageState extends State<DataPage> {
       onTap: onTap,
       child: Container(
         width: double.infinity, // 🔥 FIX: FULL WIDTH
-        margin: const EdgeInsets.only(bottom: 18),
+        // margin: const EdgeInsets.only(bottom: 18),
         padding: const EdgeInsets.all(20),
 
         decoration: BoxDecoration(
@@ -602,6 +658,168 @@ class _DataPageState extends State<DataPage> {
                 fontSize: 32,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 1.5,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  Widget temperatureCard(Map latest) {
+    final double humidity = (latest['humidity'] as num?)?.toDouble() ?? 0;
+
+    final double temp = (latest['temperature'] as num?)?.toDouble() ?? 0;
+
+    String status = "Normal";
+
+    if (temp > 35 || humidity > 80) {
+      status = "Elevated";
+    }
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => TemperaturePage(data: data)),
+        );
+      },
+
+      child: Container(
+        width: double.infinity,
+        margin: EdgeInsets.zero,
+        padding: const EdgeInsets.all(20),
+
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+
+          gradient: LinearGradient(
+            colors: [const Color(0xFF1A1A1A), Colors.orange.withOpacity(0.25)],
+          ),
+
+          border: Border.all(color: Colors.white24,width:1.5,
+          ),
+
+          // boxShadow: [
+          //   BoxShadow(color: Colors.orange.withOpacity(0.3), blurRadius: 20),
+          // ],
+        ),
+
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            
+
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                Expanded(
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.25),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(Icons.thermostat, color: Colors.orange),
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      Text(
+                        "Temperature",
+                        style: GoogleFonts.rajdhani(color: Colors.white70),
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      Container(
+                        width: 120,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.25),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: Colors.orange.withOpacity(0.4),
+                          ),
+                        ),
+                        child: Center(
+                          child: Text(
+                            "${temp.toStringAsFixed(1)}°C",
+                            style: GoogleFonts.orbitron(
+                              color: Colors.white,
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                ),
+                ),
+                
+                Expanded(
+                  child:Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.water_drop,
+                          color: Colors.lightBlue,
+                        ),
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      Text(
+                        "Humidity",
+                        style: GoogleFonts.rajdhani(color: Colors.white70),
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      Container(
+                        width: 120,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.25),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: Colors.lightBlue.withOpacity(0.4),
+                          ),
+                        ),
+                        child: Center(
+                          child: Text(
+                            "${humidity.toStringAsFixed(1)}%",
+                            style: GoogleFonts.orbitron(
+                              color: Colors.white,
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+                
+              ],
+            ),
+
+            const SizedBox(height: 10),
+
+            Center(
+              child: Text(
+                "● $status",
+                style: GoogleFonts.orbitron(
+                  color: Colors.green,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ],
@@ -742,43 +960,61 @@ class _DataPageState extends State<DataPage> {
                 loraCard(),
 
                 Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.zero,
                   child: Column(
                     children: [
-                      sensorCard(
-                        "Temperature",
-                        format(latest['temperature'], suffix: "°C"),
-                        Icons.thermostat,
-                        Colors.orange,
-                        () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => TemperaturePage(data: data),
-                          ),
+                      Container(
+                        margin: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 10,
                         ),
-                      ),
-                      sensorCard(
-                        "Gas",
-                        format(latest['gas']),
-                        Icons.cloud,
-                        Colors.green,
-                        () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => GasPage(data: data),
-                          ),
+
+                        padding: const EdgeInsets.all(16),
+
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.03),
+
+                          borderRadius: BorderRadius.circular(24),
+
+                          border: Border.all(color: Colors.white12, width: 1),
                         ),
-                      ),
-                      sensorCard(
-                        "Pressure",
-                        format(latest['pressure']),
-                        Icons.speed,
-                        Colors.blue,
-                        () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => PressurePage(data: data),
-                          ),
+
+                        child: Column(
+                          children: [
+                            temperatureCard(latest),
+
+                            const SizedBox(height: 8),
+
+                            Row(
+                              children: [
+                                miniSensorCard(
+                                  "Gas",
+                                  format(latest['gas']),
+                                  Icons.cloud,
+                                  Colors.purple,
+                                  () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => GasPage(data: data),
+                                    ),
+                                  ),
+                                ),
+
+                                miniSensorCard(
+                                  "Pressure",
+                                  "${format(latest['pressure'])} hPa",
+                                  Icons.speed,
+                                  Colors.blue,
+                                  () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => PressurePage(data: data),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -786,7 +1022,7 @@ class _DataPageState extends State<DataPage> {
                 ),
 
                 // 📈 CHART
-                buildMultiChart(),
+                // buildMultiChart(),
                 // 📜 LOG
                 buildLog(),
 

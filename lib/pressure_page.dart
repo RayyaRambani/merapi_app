@@ -10,7 +10,7 @@ class PressurePage extends StatelessWidget {
   // ================= DATA =================
   double getValue(Map item) => (item['pressure'] ?? 0).toDouble();
 
-  double getCurrent() => data.isNotEmpty ? getValue(data.last) : 0;
+  double getCurrent() => data.isNotEmpty ? getValue(data.first) : 0;
 
   double getMin() => data.map((e) => getValue(e)).reduce(min);
 
@@ -23,48 +23,52 @@ class PressurePage extends StatelessWidget {
 
   double getChange() {
     if (data.length < 2) return 0;
-    return getValue(data.last) - getValue(data.first);
+    return getValue(data.first) - getValue(data.last);
   }
 
   // ================= STATUS =================
   String getTrend() {
     final change = getChange();
-    if (change > 5) return "rising";
-    if (change < -5) return "falling";
+    if (change > 1) return "rising";
+    if (change < -1) return "falling";
     return "stable";
   }
 
   String getCondition() {
     final val = getCurrent();
-    if (val < 990) return "Low";
-    if (val > 1025) return "High";
-    return "Normal";
+
+    if (val < 990) {
+      return "Low Pressure";
+    }
+
+    if (val > 1025) {
+      return "High Pressure";
+    }
+
+    return "Normal Pressure";
   }
 
   String getStability() {
     final diff = getMax() - getMin();
-    if (diff < 5) return "Stable";
-    if (diff < 15) return "Moderate";
+    if (diff < 1) return "Stable";
+    if (diff < 3) return "Moderate";
     return "Variable";
   }
 
   // ================= CHART ================= //
   List<FlSpot> getChart() {
+    final chartData = data.reversed.toList();
+
     List<FlSpot> spots = [];
 
-    for (int i = 0; i < data.length; i++) {
-      spots.add(FlSpot(i.toDouble(), getValue(data[i])));
+    for (int i = 0; i < chartData.length; i++) {
+      spots.add(FlSpot(i.toDouble(), getValue(chartData[i])));
     }
 
     return spots;
   }
 
-  // ================= GAUGE =================
-  double getGaugePercent() {
-    double minP = 990;
-    double maxP = 1030;
-    return ((getCurrent() - minP) / (maxP - minP)).clamp(0, 1);
-  }
+  
 
   @override
   Widget build(BuildContext context) {
@@ -115,7 +119,7 @@ class PressurePage extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        "${current.toStringAsFixed(0)} hPa",
+                        "${current.toStringAsFixed(2)} hPa",
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 36,
@@ -154,65 +158,7 @@ class PressurePage extends StatelessWidget {
               ),
             ),
 
-            // ================= GAUGE =================
-            card(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Pressure Gauge",
-                    style: TextStyle(color: Colors.white),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  Center(
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        SizedBox(
-                          width: 200,
-                          height: 200,
-                          child: CircularProgressIndicator(
-                            value: getGaugePercent(),
-                            strokeWidth: 12,
-                            backgroundColor: Colors.white10,
-                            valueColor: const AlwaysStoppedAnimation(
-                              Colors.orange,
-                            ),
-                          ),
-                        ),
-                        Column(
-                          children: [
-                            Text(
-                              "${current.toStringAsFixed(0)}",
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 28,
-                              ),
-                            ),
-                            const Text(
-                              "hPa",
-                              style: TextStyle(color: Colors.white54),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  const Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text("990 hPa", style: TextStyle(color: Colors.white54)),
-                      Text("1030 hPa", style: TextStyle(color: Colors.white54)),
-                    ],
-                  ),
-                ],
-              ),
-            ),
+            
 
             // ================= TREND =================
             card(
@@ -242,7 +188,7 @@ class PressurePage extends StatelessWidget {
                     child: LineChart(
                       LineChartData(
                         minX: 0,
-                        maxX: data.length.toDouble(),
+                        maxX: (data.length - 1).toDouble(),
 
                         lineBarsData: [
                           LineChartBarData(
@@ -273,7 +219,9 @@ class PressurePage extends StatelessWidget {
                                   return const SizedBox();
                                 }
 
-                                final rawTime = data[i]['created_at'];
+                                final chartData = data.reversed.toList();
+
+                                final rawTime = chartData[i]['created_at'];
 
                                 DateTime dt = DateTime.parse(rawTime);
 
@@ -344,50 +292,28 @@ class PressurePage extends StatelessWidget {
                     ),
                   ),
                 ),
+                
               ],
             ),
-
-            // ================= ANALYSIS =================
             card(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Text(
-                    "Pressure Analysis",
+                children: [
+                  const Text(
+                    "Observation",
                     style: TextStyle(color: Colors.white),
                   ),
 
-                  SizedBox(height: 10),
+                  const SizedBox(height: 12),
 
                   Text(
-                    "• Rising Pressure",
-                    style: TextStyle(color: Colors.orange),
-                  ),
-                  Text(
-                    "May indicate increased magma movement or gas buildup",
-                    style: TextStyle(color: Colors.white70),
-                  ),
+                    getTrend() == "rising"
+                        ? "Atmospheric pressure shows an increasing trend during the observation period."
+                        : getTrend() == "falling"
+                        ? "Atmospheric pressure shows a decreasing trend during the observation period."
+                        : "Atmospheric pressure remains relatively stable during the observation period.",
 
-                  SizedBox(height: 10),
-
-                  Text(
-                    "• Falling Pressure",
-                    style: TextStyle(color: Colors.blue),
-                  ),
-                  Text(
-                    "Could signal gas release or reduced volcanic activity",
-                    style: TextStyle(color: Colors.white70),
-                  ),
-
-                  SizedBox(height: 10),
-
-                  Text(
-                    "• Stable Pressure",
-                    style: TextStyle(color: Colors.green),
-                  ),
-                  Text(
-                    "Normal conditions with minimal volcanic disturbance",
-                    style: TextStyle(color: Colors.white70),
+                    style: const TextStyle(color: Colors.white70, height: 1.5),
                   ),
                 ],
               ),
@@ -397,6 +323,7 @@ class PressurePage extends StatelessWidget {
       ),
     );
   }
+  
 
   Widget card({required Widget child}) {
     return Container(
@@ -417,7 +344,7 @@ class PressurePage extends StatelessWidget {
         Text(t, style: const TextStyle(color: Colors.white70)),
         const SizedBox(height: 6),
         Text(
-          "${v.toStringAsFixed(0)} hPa",
+          "${v.toStringAsFixed(2)} hPa",
           style: const TextStyle(color: Colors.white),
         ),
       ],
