@@ -7,20 +7,44 @@ class TemperaturePage extends StatelessWidget {
   const TemperaturePage({super.key, required this.data});
 
   // ================= DATA =================
-  List<FlSpot> getChart() {
+  List<FlSpot> getTemperatureChart() {
+    final chartData = data.reversed.toList();
+
     List<FlSpot> spots = [];
 
-    for (int i = 0; i < data.length; i++) {
-      final temp = (data[i]['temperature_kf'] ?? 0).toDouble();
+    for (int i = 0; i < chartData.length; i++) {
+      final temp = (chartData[i]['temperature_kf'] ?? 0).toDouble();
 
-      // 🔥 FIX: pakai index (bukan timestamp)
-      double x = i.toDouble();
-
-      spots.add(FlSpot(x, temp));
+      spots.add(FlSpot(i.toDouble(), temp));
     }
 
     return spots;
   }
+  List<FlSpot> getHumidityChart() {
+    final chartData = data.reversed.toList();
+
+    List<FlSpot> spots = [];
+
+    for (int i = 0; i < chartData.length; i++) {
+      final hum = (chartData[i]['humidity_kf'] ?? 0).toDouble();
+
+      spots.add(FlSpot(i.toDouble(), hum));
+    }
+
+    return spots;
+  }
+
+  double getMinHumidity() => data.isNotEmpty
+      ? data
+            .map((e) => (e['humidity_kf'] ?? 0).toDouble())
+            .reduce((a, b) => a < b ? a : b)
+      : 0;
+
+  double getMaxHumidity() => data.isNotEmpty
+      ? data
+            .map((e) => (e['humidity_kf'] ?? 0).toDouble())
+            .reduce((a, b) => a > b ? a : b)
+      : 0;
 
   double getCurrent() => data.isNotEmpty
       ? (data.first['temperature_kf'] as num?)?.toDouble() ?? 0
@@ -45,47 +69,57 @@ class TemperaturePage extends StatelessWidget {
         .toList();
     return temps.reduce((a, b) => a + b) / temps.length;
   }
+  double getAvgHumidity() {
+    if (data.isEmpty) return 0;
 
-  String getStatus(double current, double avg) {
-    double diff = current - avg;
+    final hums = data.map((e) => (e['humidity_kf'] ?? 0).toDouble()).toList();
 
-    if (diff >= 3) {
-      return "Significant Increase";
+    return hums.reduce((a, b) => a + b) / hums.length;
+  }
+
+  String getStatus(double temp, double avgTemp, double hum, double avgHum) {
+    double tempDiff = (temp - avgTemp).abs();
+    double humDiff = (hum - avgHum).abs();
+
+    if (tempDiff >= 3 || humDiff >= 3) {
+      return "Significant Change";
     }
 
-    if (diff >= 1) {
+    if (tempDiff >= 1 || humDiff >= 1) {
       return "Increasing";
     }
 
     return "Stable";
   }
 
-  Color getColor(double current, double avg) {
-    double diff = current - avg;
+  Color getColor(double temp, double avgTemp, double hum, double avgHum) {
+    double tempDiff = (temp - avgTemp).abs();
+    double humDiff = (hum - avgHum).abs();
 
-    if (diff >= 3) {
+    if (tempDiff >= 3 || humDiff >= 3) {
       return Colors.red;
     }
 
-    if (diff >= 1) {
+    if (tempDiff >= 1 || humDiff >= 1) {
       return Colors.orange;
     }
 
     return Colors.green;
   }
 
-  String getAnalysis(double current, double avg) {
-    double diff = current - avg;
+  String getAnalysis(double temp, double avgTemp, double hum, double avgHum) {
+    double tempDiff = (temp - avgTemp).abs();
+    double humDiff = (hum - avgHum).abs();
 
-    if (diff >= 3) {
-      return "A significant temperature increase was detected compared to the recent monitoring average.";
+    if (tempDiff >= 3 || humDiff >= 3) {
+      return "Significant variations were detected in environmental conditions compared to recent monitoring averages.";
     }
 
-    if (diff >= 1) {
-      return "Temperature is increasing compared to recent monitoring trends.";
+    if (tempDiff >= 1 || humDiff >= 1) {
+      return "Moderate environmental variations were detected during recent monitoring.";
     }
 
-    return "Temperature remains within normal variation ranges.";
+    return "Temperature and humidity remain within normal variation ranges.";
   }
 
   double getUpdateRate() {
@@ -106,9 +140,15 @@ class TemperaturePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final current = getCurrent();
-    final spots = getChart();
+    final chartData = data.reversed.toList();
+    final tempSpots = getTemperatureChart();
+    final humSpots = getHumidityChart();
     final humidity = getHumidity();
+    final avgHumidity = getAvgHumidity();
     final avgTemp = getAvg();
+    double minHum = getMinHumidity() - 5;
+
+    double maxHum = getMaxHumidity() + 5;
 
     if (data.isEmpty) {
       return const Scaffold(
@@ -177,8 +217,8 @@ class TemperaturePage extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       mini("Avg Temp", getAvg()),
-                      miniHumidity("Humidity", humidity),
-                      statusMini(current, avgTemp),
+                      miniHumidity("Avg Hum", getAvgHumidity()),
+                      
                     ],
                   ),
                 ],
@@ -201,7 +241,7 @@ class TemperaturePage extends StatelessWidget {
                     child: LineChart(
                       LineChartData(
                         minX: 0,
-                        maxX: (data.length - 1).toDouble(),
+                        maxX: data.isEmpty ? 0 : (data.length - 1).toDouble(),
                         minY: minY,
                         maxY: maxY,
 
@@ -223,11 +263,11 @@ class TemperaturePage extends StatelessWidget {
                             getTooltipItems: (touchedSpots) {
                               return touchedSpots.map((spot) {
                                 int index = spot.x.toInt();
-                                if (index < 0 || index >= data.length) {
+                                if (index < 0 || index >= chartData.length) {
                                   return null;
                                 }
 
-                                final rawTime = data[index]['created_at'];
+                                final rawTime = chartData[index]['created_at'];
 
                                 DateTime dt;
                                 try {
@@ -282,7 +322,7 @@ class TemperaturePage extends StatelessWidget {
                                   return const SizedBox();
                                 }
 
-                                final rawTime = data[index]['created_at'];
+                                final rawTime = chartData[index]['created_at'];
 
                                 DateTime dt;
                                 try {
@@ -311,11 +351,13 @@ class TemperaturePage extends StatelessWidget {
                         ),
 
                         lineBarsData: [
+                          // Temperature
                           LineChartBarData(
-                            spots: spots,
+                            spots: tempSpots,
                             isCurved: true,
                             color: Colors.redAccent,
                             barWidth: 3,
+
                             belowBarData: BarAreaData(
                               show: true,
                               gradient: LinearGradient(
@@ -327,6 +369,151 @@ class TemperaturePage extends StatelessWidget {
                                 end: Alignment.bottomCenter,
                               ),
                             ),
+
+                            dotData: FlDotData(show: true),
+                          ),
+
+                          
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            card(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+
+                children: [
+                  const Text(
+                    "Humidity Trend",
+                    style: TextStyle(color: Colors.white),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  SizedBox(
+                    height: 220,
+
+                    child: LineChart(
+                      LineChartData(
+                        minX: 0,
+                        maxX: data.isEmpty ? 0:(data.length - 1).toDouble(),
+
+                        minY: minHum,
+                        maxY: maxHum,
+
+                        borderData: FlBorderData(show: false),
+
+                        gridData: FlGridData(show: true),
+
+                        lineTouchData: LineTouchData(
+                          enabled: true,
+                          touchTooltipData: LineTouchTooltipData(
+                            tooltipBgColor: Colors.black87,
+                            getTooltipItems: (touchedSpots) {
+                              return touchedSpots.map((spot) {
+                                int index = spot.x.toInt();
+                                if (index < 0 || index >= chartData.length) {
+                                  return null;
+                                }
+
+                                final rawTime = chartData[index]['created_at'];
+
+                                DateTime dt;
+                                try {
+                                  dt = DateTime.parse(rawTime).toLocal();
+                                } catch (e) {
+                                  dt = DateTime.now();
+                                }
+
+                                return LineTooltipItem(
+                                  "${spot.y.toStringAsFixed(1)}%\n"
+                                  "${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}",
+                                  const TextStyle(color: Colors.white),
+                                );
+                              }).toList();
+                            },
+                          ),
+                        ),
+
+                        titlesData: FlTitlesData(
+                          leftTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              interval: (maxHum - minHum) / 4,
+                              reservedSize: 40,
+                              getTitlesWidget: (value, meta) {
+                                return Text(
+                                  value.toInt().toString(),
+                                  style: const TextStyle(
+                                    color: Colors.white54,
+                                    fontSize: 10,
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+
+                          bottomTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              reservedSize: 30,
+
+                              getTitlesWidget: (value, meta) {
+                                int index = value.toInt();
+
+                                if (index < 0 || index >= chartData.length) {
+                                  return const SizedBox();
+                                }
+
+                                int step = (chartData.length / 4).ceil();
+
+                                if (index % step != 0) {
+                                  return const SizedBox();
+                                }
+
+                                final rawTime = chartData[index]['created_at'];
+
+                                DateTime dt;
+
+                                try {
+                                  dt = DateTime.parse(rawTime).toLocal();
+                                } catch (e) {
+                                  return const SizedBox();
+                                }
+
+                                return Text(
+                                  "${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}",
+                                  style: const TextStyle(
+                                    color: Colors.white54,
+                                    fontSize: 10,
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+
+                          topTitles: AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
+
+                          rightTitles: AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
+                        ),
+
+                        lineBarsData: [
+                          LineChartBarData(
+                            spots: humSpots,
+
+                            isCurved: true,
+
+                            color: Colors.blue,
+
+                            barWidth: 3,
+
                             dotData: FlDotData(show: true),
                           ),
                         ],
@@ -372,9 +559,9 @@ class TemperaturePage extends StatelessWidget {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          getStatus(current, avgTemp),
+                          getStatus(current, avgTemp, humidity, avgHumidity).toUpperCase(),
                           style: TextStyle(
-                            color: getColor(current, avgTemp),
+                            color: getColor(current, avgTemp, humidity, avgHumidity),
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -393,7 +580,7 @@ class TemperaturePage extends StatelessWidget {
                   const Text("Analysis", style: TextStyle(color: Colors.white)),
                   const SizedBox(height: 10),
                   Text(
-                    getAnalysis(current, avgTemp),
+                    getAnalysis(current, avgTemp, humidity, avgHumidity),
                     style: const TextStyle(color: Colors.white70),
                   ),
                 ],
@@ -441,16 +628,5 @@ class TemperaturePage extends StatelessWidget {
     );
   }
 
-  Widget statusMini(double temp, double avgTemp) {
-    return Column(
-      children: [
-        const Text("Status", style: TextStyle(color: Colors.white70)),
-        const SizedBox(height: 6),
-        Text(
-          getStatus(temp, avgTemp),
-          style: TextStyle(color: getColor(temp, avgTemp), fontWeight: FontWeight.bold),
-        ),
-      ],
-    );
-  }
+  
 }

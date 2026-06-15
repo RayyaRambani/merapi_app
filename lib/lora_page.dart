@@ -33,6 +33,10 @@ class LoraPage extends StatelessWidget {
       quality = "Fair";
     }
 
+    final String displayQuality = connected ? quality : "No Signal";
+
+    
+
     return Scaffold(
       backgroundColor: bgColor,
       appBar: AppBar(
@@ -56,11 +60,10 @@ class LoraPage extends StatelessWidget {
           // ================= STATUS =================
           connectionCard(
             connected,
-            rssi,
-            snr,
-            quality,
+            connected ? "$rssi dBm" : "--",
+            connected ? snr.toStringAsFixed(1) : "--",
+            displayQuality,
           ),
-
           
 
           // ================= METRICS =================
@@ -68,12 +71,14 @@ class LoraPage extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                Expanded(child: smallCard("RSSI", "$rssi dBm", Colors.orange)),
+                Expanded(child: smallCard("RSSI",connected ? "$rssi dBm" : "--", Colors.orange)),
                 const SizedBox(width: 12),
                 Expanded(
                   child: smallCard(
                     "SNR",
-                    "${snr.toStringAsFixed(2)} dB",
+                    connected
+                        ? "${snr.toStringAsFixed(2)} dB"
+                        : "--",
                     Colors.cyan,
                   ),
                 ),
@@ -89,7 +94,17 @@ class LoraPage extends StatelessWidget {
             item("Bandwidth", "125 kHz"),
             item("Spreading Factor", "SF7"),
             item("TX Power", "17 dBm"),
-            // item("Node ID", "node_1"),
+
+            const Divider(
+              color:Colors.white24,
+            ),
+
+            item(
+              "Last Packet",
+              "${createdAt.hour.toString().padLeft(2, '0')}:"
+                  "${createdAt.minute.toString().padLeft(2, '0')}:"
+                  "${createdAt.second.toString().padLeft(2, '0')}",
+            ),
           ]),
 
 
@@ -101,7 +116,7 @@ class LoraPage extends StatelessWidget {
   }
 
   // ================= CONNECTION CARD =================
-  Widget connectionCard(bool connected, int rssi, double snr, String quality) {
+  Widget connectionCard(bool connected, String rssi, String snr, String quality) {
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(20),
@@ -146,9 +161,9 @@ class LoraPage extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              column("RSSI", "$rssi dBm"),
+              column("RSSI", rssi),
               column("Quality", quality),
-              column("SNR", snr.toStringAsFixed(1)),
+              column("SNR", snr),
             ],
           ),
         ],
