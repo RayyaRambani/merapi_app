@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
-import 'package:path_provider/path_provider.dart'; // 🔥 WAJIB
+import 'package:path_provider/path_provider.dart';
 
 const bgColor = Color(0xFF0D0D0D);
 const cardColor = Color(0xFF1A1A1A);
@@ -15,20 +15,15 @@ class ExportPage extends StatefulWidget {
 }
 
 class _ExportPageState extends State<ExportPage> {
-  String selectedType = "All";
-  String selectedFilter = "date";
-
   DateTime selectedDate = DateTime.now();
-  DateTime fromDate = DateTime.now().subtract(const Duration(days: 7));
-  DateTime toDate = DateTime.now();
 
   // ================= DOWNLOAD =================
-  Future downloadFile(String url) async {
+  Future<void> downloadFile(String url) async {
     try {
       final dir = await getExternalStorageDirectory();
 
       if (dir == null) {
-        throw Exception("Storage tidak ditemukan");
+        throw Exception("Storage not found");
       }
 
       await FlutterDownloader.enqueue(
@@ -42,78 +37,30 @@ class _ExportPageState extends State<ExportPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           duration: const Duration(seconds: 5),
-          content: Text("File disimpan di:\n${dir.path}"),
+          content: Text("File saved to:\n${dir.path}"),
         ),
       );
     } catch (e) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text("Error download: $e")));
+      ).showSnackBar(SnackBar(content: Text("Download error: $e")));
     }
   }
 
-  // ================= DATE PICK =================
-  Future pickDate() async {
+  // ================= PICK DATE =================
+  Future<void> pickDate() async {
     final picked = await showDatePicker(
       context: context,
       initialDate: selectedDate,
       firstDate: DateTime(2024),
-      lastDate: DateTime(2030),
+      lastDate: DateTime(2035),
     );
 
     if (picked != null) {
-      setState(() => selectedDate = picked);
+      setState(() {
+        selectedDate = picked;
+      });
     }
-  }
-
-  // ================= TYPE CARD =================
-  Widget typeCard(String title, IconData icon) {
-    final isSelected = selectedType == title;
-
-    return GestureDetector(
-      onTap: () => setState(() => selectedType = title),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isSelected ? lavaRed.withOpacity(0.2) : Colors.black,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: isSelected ? lavaRed : Colors.white10),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: Colors.white),
-            const SizedBox(height: 8),
-            Text(title, style: const TextStyle(color: Colors.white)),
-            if (isSelected)
-              const Padding(
-                padding: EdgeInsets.only(top: 6),
-                child: Icon(Icons.check_circle, color: lavaRed, size: 16),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ================= FILTER TAB =================
-  Widget filterTab(String label, String value) {
-    final isActive = selectedFilter == value;
-
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => setState(() => selectedFilter = value),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            color: isActive ? lavaRed : Colors.transparent,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Center(
-            child: Text(label, style: const TextStyle(color: Colors.white)),
-          ),
-        ),
-      ),
-    );
   }
 
   // ================= BOX =================
@@ -130,48 +77,32 @@ class _ExportPageState extends State<ExportPage> {
   }
 
   // ================= EXPORT BUTTON =================
-  Widget exportButton(String text) {
+  Widget exportButton() {
     return GestureDetector(
       onTap: () {
-        String url = "";
+        final date = DateFormat("yyyy-MM-dd").format(selectedDate);
 
-        if (selectedFilter == "date") {
-          final date = DateFormat("yyyy-MM-dd").format(selectedDate);
-          url =
-              "https://merapi-backend-production.up.railway.app/api/v1/export?date=$date";
-        }
-
-        if (selectedFilter == "week") {
-          final date = DateFormat("yyyy-MM-dd").format(selectedDate);
-          url =
-              "https://merapi-backend-production.up.railway.app/api/v1/export?date=$date";
-        }
-
-        if (selectedFilter == "range") {
-          final date = DateFormat("yyyy-MM-dd").format(fromDate);
-          url =
-              "https://merapi-backend-production.up.railway.app/api/v1/export?date=$date";
-        }
-
-        // 🔥 VALIDASI URL
-        if (url.isEmpty) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text("URL tidak valid")));
-          return;
-        }
+        final url =
+            "https://merapi-backend-production.up.railway.app/api/v1/export?date=$date";
 
         downloadFile(url);
       },
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 16),
+        padding: const EdgeInsets.symmetric(vertical: 18),
         decoration: BoxDecoration(
           color: lavaRed,
           borderRadius: BorderRadius.circular(16),
         ),
-        child: Center(
-          child: Text(text, style: const TextStyle(color: Colors.white)),
+        child: const Center(
+          child: Text(
+            "EXPORT CSV",
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+          ),
         ),
       ),
     );
@@ -182,44 +113,65 @@ class _ExportPageState extends State<ExportPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: bgColor,
+
       appBar: AppBar(
         backgroundColor: Colors.black,
-        title: const Text("Export Data", style: TextStyle(color: Colors.white)),
+        elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
+        title: const Text("Export Data", style: TextStyle(color: Colors.white)),
       ),
+
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
+
         child: Column(
           children: [
-            // ================= SELECT TYPE =================
+            // ================= DATE CARD =================
             Container(
               padding: const EdgeInsets.all(16),
+
               decoration: BoxDecoration(
                 color: cardColor,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: Colors.red.withOpacity(0.4)),
               ),
+
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+
                 children: [
                   const Text(
-                    "Select Data Type",
-                    style: TextStyle(color: Colors.white),
+                    "Select Export Date",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
+
                   const SizedBox(height: 16),
-                  GridView.count(
-                    crossAxisCount: 2,
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    mainAxisSpacing: 10,
-                    crossAxisSpacing: 10,
-                    children: [
-                      typeCard("All", Icons.bar_chart),
-                      typeCard("Temperature", Icons.thermostat),
-                      typeCard("Gas", Icons.cloud),
-                      typeCard("Pressure", Icons.speed),
-                      typeCard("LoRa", Icons.wifi),
-                    ],
+
+                  buildBox(
+                    child: Row(
+                      children: [
+                        const Icon(Icons.calendar_today, color: Colors.white70),
+
+                        const SizedBox(width: 12),
+
+                        Expanded(
+                          child: Text(
+                            DateFormat("dd MMMM yyyy").format(selectedDate),
+
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                        ),
+
+                        IconButton(
+                          onPressed: pickDate,
+                          icon: const Icon(Icons.edit, color: Colors.white),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -227,148 +179,80 @@ class _ExportPageState extends State<ExportPage> {
 
             const SizedBox(height: 20),
 
-            // ================= FILTER + FORM =================
+            // ================= CSV CONTENT =================
             Container(
               padding: const EdgeInsets.all(16),
+
               decoration: BoxDecoration(
                 color: cardColor,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: Colors.red.withOpacity(0.4)),
               ),
-              child: Column(
+
+              child: const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: Colors.black,
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    child: Row(
-                      children: [
-                        filterTab("By Date", "date"),
-                        filterTab("By Week", "week"),
-                        filterTab("Date Range", "range"),
-                      ],
+                  Text(
+                    "CSV Contents",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
 
-                  const SizedBox(height: 20),
+                  SizedBox(height: 12),
 
-                  if (selectedFilter == "date") ...[
-                    const Text(
-                      "Select Date",
-                      style: TextStyle(color: Colors.white70),
-                    ),
-                    const SizedBox(height: 10),
-                    buildBox(
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.calendar_today,
-                            color: Colors.white70,
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              DateFormat("MMMM d, yyyy").format(selectedDate),
-                              style: const TextStyle(color: Colors.white),
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.edit, color: Colors.white),
-                            onPressed: pickDate,
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    exportButton("Export Data"),
-                    const SizedBox(height: 12),
+                  Text(
+                    "• Temperature (Raw & Kalman)\n"
+                    "• Humidity (Raw & Kalman)\n"
+                    "• Gas (Raw & Kalman)\n"
+                    "• Pressure (Raw & Kalman)\n"
+                    "• GPS Coordinates\n"
+                    "• Satellites\n"
+                    "• RSSI\n"
+                    "• SNR\n"
+                    "• Timestamp",
 
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: () async {
-                          final dir = await getExternalStorageDirectory();
-
-                          if (dir == null) return;
-
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              duration: const Duration(seconds: 8),
-                              content: Text("Lokasi file:\n${dir.path}"),
-                            ),
-                          );
-                        },
-                        icon: const Icon(Icons.folder),
-                        label: const Text("Lihat Lokasi File"),
-                      ),
-                    ),
-                  ],
-
-                  if (selectedFilter == "week") ...[
-                    const Text(
-                      "Select Week",
-                      style: TextStyle(color: Colors.white70),
-                    ),
-                    const SizedBox(height: 10),
-                    buildBox(
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.calendar_today,
-                            color: Colors.white70,
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              "Week of ${DateFormat("MMMM d, yyyy").format(selectedDate)}",
-                              style: const TextStyle(color: Colors.white),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    exportButton("Export Week Data"),
-                  ],
-
-                  if (selectedFilter == "range") ...[
-                    const Text(
-                      "From Date",
-                      style: TextStyle(color: Colors.white70),
-                    ),
-                    const SizedBox(height: 10),
-                    buildBox(
-                      child: Text(
-                        DateFormat("MMMM d, yyyy").format(fromDate),
-                        style: const TextStyle(color: Colors.white),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      "To Date",
-                      style: TextStyle(color: Colors.white70),
-                    ),
-                    const SizedBox(height: 10),
-                    buildBox(
-                      child: Text(
-                        DateFormat("MMMM d, yyyy").format(toDate),
-                        style: const TextStyle(color: Colors.white),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    exportButton("Export Range Data"),
-                  ],
+                    style: TextStyle(color: Colors.white70, height: 1.6),
+                  ),
                 ],
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // ================= EXPORT =================
+            exportButton(),
+
+            const SizedBox(height: 12),
+
+            // ================= FILE LOCATION =================
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () async {
+                  final dir = await getExternalStorageDirectory();
+
+                  if (dir == null) return;
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      duration: const Duration(seconds: 8),
+                      content: Text("File Location:\n${dir.path}"),
+                    ),
+                  );
+                },
+
+                icon: const Icon(Icons.folder),
+
+                label: const Text("SHOW FILE LOCATION"),
               ),
             ),
           ],
         ),
       ),
     );
-  
   }
-  
 }

@@ -8,22 +8,33 @@ class PressurePage extends StatelessWidget {
   const PressurePage({super.key, required this.data});
 
   // ================= DATA =================
-  double getValue(Map item) => (item['pressure'] ?? 0).toDouble();
+  double getValue(Map item) => (item['pressure_kf'] ?? 0).toDouble();
 
   double getCurrent() => data.isNotEmpty ? getValue(data.first) : 0;
 
-  double getMin() => data.map((e) => getValue(e)).reduce(min);
+  double getMin() {
+    if (data.isEmpty) return 0;
 
-  double getMax() => data.map((e) => getValue(e)).reduce(max);
+    return data.map((e) => getValue(e)).reduce(min);
+  }
+
+  double getMax() {
+    if (data.isEmpty) return 0;
+
+    return data.map((e) => getValue(e)).reduce(max);
+  }
 
   double getAvg() {
+    if (data.isEmpty) return 0;
+
     final vals = data.map((e) => getValue(e)).toList();
+
     return vals.reduce((a, b) => a + b) / vals.length;
   }
 
   double getChange() {
     if (data.length < 2) return 0;
-    return getValue(data.first) - getValue(data.last);
+    return getValue(data.first) - getValue(data[1]);
   }
 
   // ================= STATUS =================
@@ -34,20 +45,22 @@ class PressurePage extends StatelessWidget {
     return "stable";
   }
 
-  String getCondition() {
-    final val = getCurrent();
+  String getPressureStatus() {
+    final avg = getAvg();
+    final current = getCurrent();
 
-    if (val < 990) {
-      return "Low Pressure";
+    double diff = current - avg;
+
+    if (diff > 1) {
+      return "Rising";
     }
 
-    if (val > 1025) {
-      return "High Pressure";
+    if (diff < -1) {
+      return "Falling";
     }
 
-    return "Normal Pressure";
+    return "Stable";
   }
-
   String getStability() {
     final diff = getMax() - getMin();
     if (diff < 1) return "Stable";
@@ -173,7 +186,7 @@ class PressurePage extends StatelessWidget {
                         style: TextStyle(color: Colors.white),
                       ),
                       Text(
-                        "${change >= 0 ? "+" : ""}${change.toStringAsFixed(0)} hPa",
+                        "${change >= 0 ? "+" : ""}${change.toStringAsFixed(2)} hPa",
                         style: TextStyle(
                           color: change >= 0 ? Colors.green : Colors.red,
                         ),
@@ -223,7 +236,7 @@ class PressurePage extends StatelessWidget {
 
                                 final rawTime = chartData[i]['created_at'];
 
-                                DateTime dt = DateTime.parse(rawTime);
+                                DateTime dt = DateTime.parse(rawTime).toLocal();
 
                                 return Text(
                                   "${dt.hour}:${dt.minute.toString().padLeft(2, '0')}",
@@ -268,7 +281,7 @@ class PressurePage extends StatelessWidget {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          getStability(),
+                          getPressureStatus(),
                           style: const TextStyle(color: Colors.white),
                         ),
                       ],
@@ -280,12 +293,12 @@ class PressurePage extends StatelessWidget {
                     child: Column(
                       children: [
                         const Text(
-                          "Condition",
+                          "Status",
                           style: TextStyle(color: Colors.white54),
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          getCondition(),
+                          getPressureStatus(),
                           style: const TextStyle(color: Colors.white),
                         ),
                       ],

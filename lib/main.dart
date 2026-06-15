@@ -70,6 +70,7 @@ class _DataPageState extends State<DataPage> {
 
   @override
   void dispose() {
+    timer?.cancel();
     dangerTimer?.cancel();
     super.dispose();
   }
@@ -118,7 +119,21 @@ class _DataPageState extends State<DataPage> {
 
     final time = DateTime.parse(data.first['created_at']).toLocal();
 
-    return "${time.hour}:${time.minute}:${time.second}";
+    return "${time.hour.toString().padLeft(2, '0')}:"
+        "${time.minute.toString().padLeft(2, '0')}:"
+        "${time.second.toString().padLeft(2, '0')}";
+  }
+
+  double averageLog(String key) {
+    final count = data.length > 10 ? 10 : data.length;
+
+    double sum = 0;
+
+    for (int i = 0; i < count; i++) {
+      sum += (data[i][key] as num?)?.toDouble() ?? 0;
+    }
+
+    return sum / count;
   }
 
   // ================= ANALYZER =================
@@ -132,23 +147,38 @@ class _DataPageState extends State<DataPage> {
     }
 
     final last = data.first;
-    final prev = data.length > 1 ? data[1] : data.first;
 
-    double temp = (last['temperature'] ?? 0).toDouble();
-    double gas = (last['gas'] ?? 0).toDouble();
-    double pressure = (last['pressure'] ?? 0).toDouble();
+    double average(String key) {
+      if (data.isEmpty) return 0;
 
-    double prevTemp = (prev['temperature'] ?? 0).toDouble();
-    double prevGas = (prev['gas'] ?? 0).toDouble();
-    double prevPressure = (prev['pressure'] ?? 0).toDouble();
+      final count = data.length > 10 ? 10 : data.length;
+
+      double sum = 0;
+
+      for (int i = 0; i < count; i++) {
+        sum += (data[i][key] as num?)?.toDouble() ?? 0;
+      }
+
+      return sum / count;
+    }
+
+    double temp = (last['temperature_kf'] ?? 0).toDouble();
+    double gas = (last['gas_kf'] ?? 0).toDouble();
+    double pressure = (last['pressure_kf'] ?? 0).toDouble();
+
+    final avgTemp = average('temperature_kf');
+
+    final avgGas = average('gas_kf');
+
+    final avgPressure = average('pressure_kf');
 
     final status = VolcanoAnalyzer.getStatus(
       temp: temp,
       gas: gas,
       pressure: pressure,
-      prevTemp: prevTemp,
-      prevGas: prevGas,
-      prevPressure: prevPressure,
+      avgTemp: avgTemp,
+      avgGas: avgGas,
+      avgPressure: avgPressure,
     );
 
     return {
@@ -158,9 +188,9 @@ class _DataPageState extends State<DataPage> {
         temp: temp,
         gas: gas,
         pressure: pressure,
-        prevTemp: prevTemp,
-        prevGas: prevGas,
-        prevPressure: prevPressure,
+        avgTemp: avgTemp,
+        avgGas: avgGas,
+        avgPressure: avgPressure,
       ),
     };
   }
@@ -211,7 +241,7 @@ class _DataPageState extends State<DataPage> {
                   shape: BoxShape.circle,
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 12),
               Text(
                 "SYSTEM STATUS",
                 style: GoogleFonts.rajdhani(
@@ -242,18 +272,6 @@ class _DataPageState extends State<DataPage> {
           Text(
             result["analysis"],
             style: GoogleFonts.rajdhani(color: Colors.white, fontSize: 14),
-          ),
-
-          const SizedBox(height: 18),
-
-          // 📊 MINI DATA
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              mini("Temp", data.first['temperature'], "°C"),
-              mini("Gas", data.first['gas'], ""),
-              mini("Pressure", data.first['pressure'], "hPa"),
-            ],
           ),
         ],
       ),
@@ -374,27 +392,119 @@ class _DataPageState extends State<DataPage> {
 
   Widget buildLog() {
     return Container(
-      margin: EdgeInsets.all(16),
-      padding: EdgeInsets.all(16),
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
+
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
-        gradient: LinearGradient(
+        gradient: const LinearGradient(
           colors: [Color(0xFF1A1A1A), Color(0xFF0F0F0F)],
         ),
+        border: Border.all(color: Colors.white12),
       ),
+
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text("DATA LOG", style: GoogleFonts.orbitron(color: Colors.white)),
-          SizedBox(height: 10),
-          ...data
-              .take(5)
-              .map(
-                (d) => Text(
-                  "${d['temperature']}°C | Gas ${d['gas']} | ${d['pressure']} hPa",
-                  style: GoogleFonts.rajdhani(color: Colors.white70),
-                ),
-              ),
+
+          const SizedBox(height: 12),
+
+          SizedBox(
+            height: 280,
+
+            child: ListView.builder(
+              itemCount: data.length > 10 ? 10 : data.length,
+
+              itemBuilder: (context, index) {
+                final d = data[index];
+
+                final time = DateTime.parse(d['created_at']).toLocal();
+
+                final avgTemp = averageLog('temperature_kf');
+                final avgGas = averageLog('gas_kf');
+                final avgPressure = averageLog('pressure_kf');
+
+                final status = VolcanoAnalyzer.getStatus(
+                  temp: (d['temperature_kf'] ?? 0).toDouble(),
+
+                  gas: (d['gas_kf'] ?? 0).toDouble(),
+
+                  pressure: (d['pressure_kf'] ?? 0).toDouble(),
+
+                  avgTemp: avgTemp,
+
+                  avgGas: avgGas,
+
+                  avgPressure: avgPressure,
+                );
+
+                final statusColor = VolcanoAnalyzer.getColor(status);
+
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+
+                  padding: const EdgeInsets.all(14),
+
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.03),
+
+                    borderRadius: BorderRadius.circular(18),
+
+                    border: Border.all(color: statusColor.withOpacity(0.4)),
+                  ),
+
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+
+                        children: [
+                          Text(
+                            "${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}:${time.second.toString().padLeft(2, '0')}",
+                            style: GoogleFonts.rajdhani(color: Colors.white70),
+                          ),
+
+                          Text(
+                            status,
+                            style: GoogleFonts.orbitron(
+                              color: statusColor,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 10),
+
+                      Text(
+                        "Temperature : ${((d['temperature_kf']?? 0)as num).toStringAsFixed(2)} °C",
+                        style: GoogleFonts.rajdhani(color: Colors.white),
+                      ),
+
+                      Text(
+                        "Humidity : ${((d['humidity_kf']?? 0)as num).toStringAsFixed(2)} %",
+                        style: GoogleFonts.rajdhani(color: Colors.white),
+                      ),
+
+                      Text(
+                        "Gas : ${((d['gas_kf']?? 0)as num).toStringAsFixed(2)} ADC",
+                        style: GoogleFonts.rajdhani(color: Colors.white),
+                      ),
+
+                      Text(
+                        "Pressure : ${((d['pressure_kf']?? 0)as num).toStringAsFixed(2)} hPa",
+                        style: GoogleFonts.rajdhani(color: Colors.white),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
         ],
       ),
     );
@@ -441,25 +551,6 @@ class _DataPageState extends State<DataPage> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget mini(String title, dynamic val, String unit) {
-    return Column(
-      children: [
-        Text(
-          title,
-          style: GoogleFonts.rajdhani(color: Colors.white70, fontSize: 12),
-        ),
-        Text(
-          "$val$unit",
-          style: GoogleFonts.orbitron(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 14,
-          ),
-        ),
-      ],
     );
   }
 
@@ -521,6 +612,25 @@ class _DataPageState extends State<DataPage> {
 
   // ================= LORA =================
   Widget loraCard() {
+    if (data.isEmpty) return const SizedBox();
+
+    final latest = data.first;
+
+    final createdAt = DateTime.parse(latest['created_at']).toLocal();
+
+    final connected = DateTime.now().difference(createdAt).inSeconds < 15;
+
+    final rssi = (latest['rssi'] ?? 0).toInt();
+
+    String quality = "Poor";
+
+    if (rssi > -70) {
+      quality = "Excellent";
+    } else if (rssi > -90) {
+      quality = "Good";
+    } else if (rssi > -110) {
+      quality = "Fair";
+    }
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -537,7 +647,11 @@ class _DataPageState extends State<DataPage> {
           gradient: const LinearGradient(
             colors: [Color(0xFF1A1A1A), Color(0xFF140A0A)],
           ),
-          border: Border.all(color: Colors.red.withOpacity(0.4)),
+          border: Border.all(
+            color: connected
+                ? Colors.green.withOpacity(0.4)
+                : Colors.red.withOpacity(0.4),
+          ),
         ),
 
         child: Column(
@@ -549,12 +663,20 @@ class _DataPageState extends State<DataPage> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.15),
+                    color: connected
+                        ? Colors.green.withOpacity(0.15)
+                        : Colors.red.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: const Icon(Icons.wifi, color: Colors.green),
+                  child: Icon(
+                    Icons.wifi,
+                    color: connected ? Colors.green : Colors.red,
+                  ),
                 ),
-                const CircleAvatar(radius: 5, backgroundColor: Colors.green),
+                CircleAvatar(
+                  radius: 5,
+                  backgroundColor: connected ? Colors.green : Colors.red,
+                ),
               ],
             ),
 
@@ -572,13 +694,25 @@ class _DataPageState extends State<DataPage> {
             const SizedBox(height: 6),
 
             Text(
-              "Connected",
+              connected ? "CONNECTED" : "DISCONNECTED",
               style: GoogleFonts.orbitron(
                 color: Colors.white,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 1.5,
               ),
+            ),
+            const SizedBox(height: 6),
+
+            Text(
+              "Signal Quality: $quality",
+              style: GoogleFonts.rajdhani(color: Colors.white70, fontSize: 13),
+            ),
+            const SizedBox(height: 4),
+
+            Text(
+              "RSSI: $rssi dBm",
+              style: GoogleFonts.rajdhani(color: Colors.white54, fontSize: 12),
             ),
           ],
         ),
@@ -665,16 +799,11 @@ class _DataPageState extends State<DataPage> {
       ),
     );
   }
+
   Widget temperatureCard(Map latest) {
-    final double humidity = (latest['humidity'] as num?)?.toDouble() ?? 0;
+    final double humidity = (latest['humidity_kf'] as num?)?.toDouble() ?? 0;
 
-    final double temp = (latest['temperature'] as num?)?.toDouble() ?? 0;
-
-    String status = "Normal";
-
-    if (temp > 35 || humidity > 80) {
-      status = "Elevated";
-    }
+    final double temp = (latest['temperature_kf'] as num?)?.toDouble() ?? 0;
 
     return GestureDetector(
       onTap: () {
@@ -696,8 +825,7 @@ class _DataPageState extends State<DataPage> {
             colors: [const Color(0xFF1A1A1A), Colors.orange.withOpacity(0.25)],
           ),
 
-          border: Border.all(color: Colors.white24,width:1.5,
-          ),
+          border: Border.all(color: Colors.white24, width: 1.5),
 
           // boxShadow: [
           //   BoxShadow(color: Colors.orange.withOpacity(0.3), blurRadius: 20),
@@ -707,8 +835,6 @@ class _DataPageState extends State<DataPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            
-
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
@@ -721,7 +847,10 @@ class _DataPageState extends State<DataPage> {
                           color: Colors.black.withOpacity(0.25),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Icon(Icons.thermostat, color: Colors.orange),
+                        child: const Icon(
+                          Icons.thermostat,
+                          color: Colors.orange,
+                        ),
                       ),
 
                       const SizedBox(height: 12),
@@ -755,11 +884,11 @@ class _DataPageState extends State<DataPage> {
                         ),
                       ),
                     ],
+                  ),
                 ),
-                ),
-                
+
                 Expanded(
-                  child:Column(
+                  child: Column(
                     children: [
                       Container(
                         padding: const EdgeInsets.all(10),
@@ -805,22 +934,8 @@ class _DataPageState extends State<DataPage> {
                       ),
                     ],
                   ),
-                )
-                
-              ],
-            ),
-
-            const SizedBox(height: 10),
-
-            Center(
-              child: Text(
-                "● $status",
-                style: GoogleFonts.orbitron(
-                  color: Colors.green,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
                 ),
-              ),
+              ],
             ),
           ],
         ),
@@ -946,14 +1061,60 @@ class _DataPageState extends State<DataPage> {
           ? const Center(child: CircularProgressIndicator())
           : ListView(
               children: [
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                  child: Text(
-                    "Last Update: ${getLastUpdate()}",
-                    style: GoogleFonts.rajdhani(
-                      color: Colors.white54,
-                      fontSize: 12,
+                Container(
+                  margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                  padding: const EdgeInsets.all(18),
+
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(24),
+
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF1A1A1A), Color(0xFF0F0F0F)],
                     ),
+
+                    border: Border.all(color: Colors.green.withOpacity(0.3)),
+                  ),
+
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: const Icon(Icons.radar, color: Colors.green),
+                      ),
+
+                      const SizedBox(width: 14),
+
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "LIVE DATA STREAM",
+                              style: GoogleFonts.orbitron(
+                                color: Colors.greenAccent,
+                                fontSize: 11,
+                                letterSpacing: 1.5,
+                              ),
+                            ),
+
+                            const SizedBox(height: 6),
+
+                            Text(
+                              getLastUpdate(),
+                              style: GoogleFonts.orbitron(
+                                color: Colors.white,
+                                fontSize: 26,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 analysisCard(),
@@ -989,7 +1150,7 @@ class _DataPageState extends State<DataPage> {
                               children: [
                                 miniSensorCard(
                                   "Gas",
-                                  format(latest['gas']),
+                                  "${(latest['gas_kf'] ?? 0).toStringAsFixed(2)} ADC",
                                   Icons.cloud,
                                   Colors.purple,
                                   () => Navigator.push(
@@ -1002,7 +1163,7 @@ class _DataPageState extends State<DataPage> {
 
                                 miniSensorCard(
                                   "Pressure",
-                                  "${format(latest['pressure'])} hPa",
+                                  "${format(latest['pressure_kf'])} hPa",
                                   Icons.speed,
                                   Colors.blue,
                                   () => Navigator.push(

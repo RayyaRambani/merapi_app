@@ -6,43 +6,44 @@ class VolcanoAnalyzer {
     required double temp,
     required double gas,
     required double pressure,
-    required double prevTemp,
-    required double prevGas,
-    required double prevPressure,
+    required double avgTemp,
+    required double avgGas,
+    required double avgPressure,
   }) {
-    // 🔴 1. NILAI EKSTRIM (langsung danger)
-    if (temp > 150 || gas > 300 || pressure > 1200) {
-      return "DANGER";
+    if (avgTemp == 0 || avgGas == 0) {
+      return "NORMAL";
     }
 
-    // ⚠️ 2. NILAI MENENGAH
-    if (temp > 70 || gas > 100 || pressure < 900) {
-      return "SIAGA";
+    final gasChange = ((gas - avgGas) / avgGas) * 100;
+
+    final tempChange = ((temp - avgTemp) / avgTemp) * 100;
+
+    // HIGH
+    if (gasChange > 15 || tempChange > 5) {
+      return "HIGH";
     }
 
-    // 🟡 3. TREND (baru pakai kenaikan)
-    bool tempUp = temp > prevTemp;
-    bool gasUp = gas > prevGas;
-
-    if (tempUp && gasUp) {
-      return "WASPADA";
+    // INCREASED
+    if (gasChange > 5 || tempChange > 2) {
+      return "INCREASED";
     }
 
-    // ✅ 4. AMAN
-    return "SAFE";
+    // NORMAL
+    return "NORMAL";
   }
 
   // ================= COLOR =================
   static Color getColor(String status) {
     switch (status) {
-      case "SAFE":
+      case "NORMAL":
         return Colors.green;
-      case "WASPADA":
-        return Colors.yellow;
-      case "SIAGA":
+
+      case "INCREASED":
         return Colors.orange;
-      case "DANGER":
+
+      case "HIGH":
         return Colors.red;
+
       default:
         return Colors.grey;
     }
@@ -53,30 +54,26 @@ class VolcanoAnalyzer {
     required double temp,
     required double gas,
     required double pressure,
-    required double prevTemp,
-    required double prevGas,
-    required double prevPressure,
+    required double avgTemp,
+    required double avgGas,
+    required double avgPressure,
   }) {
-    if (temp > 150) {
-      return "Extreme temperature detected. High volcanic activity.";
+    if (avgTemp == 0 || avgGas == 0) {
+      return "Insufficient historical data for analysis.";
     }
 
-    if (gas > 300) {
-      return "High gas concentration detected. Possible magma release.";
+    final gasChange = ((gas - avgGas) / avgGas) * 100;
+
+    final tempChange = ((temp - avgTemp) / avgTemp) * 100;
+
+    if (gasChange > 15 || tempChange > 5) {
+      return "A significant increase was detected compared to recent monitoring trends.";
     }
 
-    if (pressure > 1200) {
-      return "Pressure anomaly detected.";
+    if (gasChange > 5 || tempChange > 2) {
+      return "An increase in environmental parameters was detected during recent monitoring.";
     }
 
-    if (temp > 70 && gas > 100) {
-      return "Increasing temperature and gas indicate rising volcanic activity.";
-    }
-
-    if (temp > prevTemp) {
-      return "Temperature is increasing. Early activity suspected.";
-    }
-
-    return "All parameters are stable.";
+    return "Monitoring parameters remain within normal variation ranges.";
   }
 }

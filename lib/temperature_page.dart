@@ -11,7 +11,7 @@ class TemperaturePage extends StatelessWidget {
     List<FlSpot> spots = [];
 
     for (int i = 0; i < data.length; i++) {
-      final temp = (data[i]['temperature'] ?? 0).toDouble();
+      final temp = (data[i]['temperature_kf'] ?? 0).toDouble();
 
       // 🔥 FIX: pakai index (bukan timestamp)
       double x = i.toDouble();
@@ -23,56 +23,76 @@ class TemperaturePage extends StatelessWidget {
   }
 
   double getCurrent() => data.isNotEmpty
-      ? (data.first['temperature'] as num?)?.toDouble() ?? 0
+      ? (data.first['temperature_kf'] as num?)?.toDouble() ?? 0
       : 0;
 
   double getMin() => data.isNotEmpty
       ? data
-            .map((e) => (e['temperature'] ?? 0).toDouble())
+            .map((e) => (e['temperature_kf'] ?? 0).toDouble())
             .reduce((a, b) => a < b ? a : b)
       : 0;
 
   double getMax() => data.isNotEmpty
       ? data
-            .map((e) => (e['temperature'] ?? 0).toDouble())
+            .map((e) => (e['temperature_kf'] ?? 0).toDouble())
             .reduce((a, b) => a > b ? a : b)
       : 0;
 
   double getAvg() {
     if (data.isEmpty) return 0;
-    final temps = data.map((e) => (e['temperature'] ?? 0).toDouble()).toList();
+    final temps = data
+        .map((e) => (e['temperature_kf'] ?? 0).toDouble())
+        .toList();
     return temps.reduce((a, b) => a + b) / temps.length;
   }
 
-  String getStatus(double val) {
-    if (val < 30) return "Normal";
-    if (val <= 40) return "Elevated";
-    return "High";
-  }
+  String getStatus(double current, double avg) {
+    double diff = current - avg;
 
-  Color getColor(double val) {
-    if (val < 30) return Colors.green;
-    if (val <= 40) return Colors.orange;
-    return Colors.red;
-  }
-
-  String getAnalysis(double temp, double hum) {
-    if (temp < 30 && hum < 80) {
-      return "Environmental conditions are stable. No significant thermal anomaly detected.";
+    if (diff >= 3) {
+      return "Significant Increase";
     }
 
-    if (temp < 40) {
-      return "Temperature shows an increasing trend and should be monitored.";
+    if (diff >= 1) {
+      return "Increasing";
     }
 
-    return "Significant thermal anomaly detected. Further investigation is recommended.";
+    return "Stable";
+  }
+
+  Color getColor(double current, double avg) {
+    double diff = current - avg;
+
+    if (diff >= 3) {
+      return Colors.red;
+    }
+
+    if (diff >= 1) {
+      return Colors.orange;
+    }
+
+    return Colors.green;
+  }
+
+  String getAnalysis(double current, double avg) {
+    double diff = current - avg;
+
+    if (diff >= 3) {
+      return "A significant temperature increase was detected compared to the recent monitoring average.";
+    }
+
+    if (diff >= 1) {
+      return "Temperature is increasing compared to recent monitoring trends.";
+    }
+
+    return "Temperature remains within normal variation ranges.";
   }
 
   double getUpdateRate() {
     if (data.length < 2) return 0;
 
-    DateTime t1 = DateTime.parse(data[0]['created_at']);
-    DateTime t2 = DateTime.parse(data[1]['created_at']);
+    DateTime t1 = DateTime.parse(data[0]['created_at']).toLocal();
+    DateTime t2 = DateTime.parse(data[1]['created_at']).toLocal();
 
     return t1.difference(t2).inSeconds.toDouble();
   }
@@ -80,7 +100,7 @@ class TemperaturePage extends StatelessWidget {
   double getHumidity() {
     if (data.isEmpty) return 0;
 
-    return (data.first['humidity'] as num?)?.toDouble() ?? 0;
+    return (data.first['humidity_kf'] as num?)?.toDouble() ?? 0;
   }
 
   @override
@@ -88,6 +108,7 @@ class TemperaturePage extends StatelessWidget {
     final current = getCurrent();
     final spots = getChart();
     final humidity = getHumidity();
+    final avgTemp = getAvg();
 
     if (data.isEmpty) {
       return const Scaffold(
@@ -157,7 +178,7 @@ class TemperaturePage extends StatelessWidget {
                     children: [
                       mini("Avg Temp", getAvg()),
                       miniHumidity("Humidity", humidity),
-                      statusMini(current),
+                      statusMini(current, avgTemp),
                     ],
                   ),
                 ],
@@ -180,7 +201,7 @@ class TemperaturePage extends StatelessWidget {
                     child: LineChart(
                       LineChartData(
                         minX: 0,
-                        maxX: data.length.toDouble(),
+                        maxX: (data.length - 1).toDouble(),
                         minY: minY,
                         maxY: maxY,
 
@@ -202,12 +223,15 @@ class TemperaturePage extends StatelessWidget {
                             getTooltipItems: (touchedSpots) {
                               return touchedSpots.map((spot) {
                                 int index = spot.x.toInt();
+                                if (index < 0 || index >= data.length) {
+                                  return null;
+                                }
 
                                 final rawTime = data[index]['created_at'];
 
                                 DateTime dt;
                                 try {
-                                  dt = DateTime.parse(rawTime);
+                                  dt = DateTime.parse(rawTime).toLocal();
                                 } catch (e) {
                                   dt = DateTime.now();
                                 }
@@ -262,7 +286,7 @@ class TemperaturePage extends StatelessWidget {
 
                                 DateTime dt;
                                 try {
-                                  dt = DateTime.parse(rawTime);
+                                  dt = DateTime.parse(rawTime).toLocal();
                                 } catch (e) {
                                   return const SizedBox();
                                 }
@@ -348,9 +372,9 @@ class TemperaturePage extends StatelessWidget {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          getStatus(current),
+                          getStatus(current, avgTemp),
                           style: TextStyle(
-                            color: getColor(current),
+                            color: getColor(current, avgTemp),
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -369,7 +393,7 @@ class TemperaturePage extends StatelessWidget {
                   const Text("Analysis", style: TextStyle(color: Colors.white)),
                   const SizedBox(height: 10),
                   Text(
-                    getAnalysis(current, humidity),
+                    getAnalysis(current, avgTemp),
                     style: const TextStyle(color: Colors.white70),
                   ),
                 ],
@@ -417,14 +441,14 @@ class TemperaturePage extends StatelessWidget {
     );
   }
 
-  Widget statusMini(double temp) {
+  Widget statusMini(double temp, double avgTemp) {
     return Column(
       children: [
         const Text("Status", style: TextStyle(color: Colors.white70)),
         const SizedBox(height: 6),
         Text(
-          getStatus(temp),
-          style: TextStyle(color: getColor(temp), fontWeight: FontWeight.bold),
+          getStatus(temp, avgTemp),
+          style: TextStyle(color: getColor(temp, avgTemp), fontWeight: FontWeight.bold),
         ),
       ],
     );

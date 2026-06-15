@@ -7,7 +7,19 @@ class GasPage extends StatelessWidget {
   const GasPage({super.key, required this.data});
 
   // ================= DATA =================
-  double getCurrent() => (data.first['gas'] as num?)?.toDouble() ?? 0;
+  double getCurrent() {
+    if (data.isEmpty) return 0;
+    return (data.first['gas_kf'] as num?)?.toDouble() ?? 0;
+  }
+  double getAverage() {
+    if (data.isEmpty) return 0;
+
+    final values = data
+        .map((e) => (e['gas_kf'] as num?)?.toDouble() ?? 0)
+        .toList();
+
+    return values.reduce((a, b) => a + b) / values.length;
+  }
 
   // List<double> getGasValues() {
   //   return data.map((e) => (e['gas'] as num?)?.toDouble() ?? 0).toList();
@@ -30,12 +42,12 @@ class GasPage extends StatelessWidget {
 
   
   List<FlSpot> getSpots() {
-    final chartData = data.reversed.toList();
+    final chartData = data.take(30).toList().reversed.toList();
 
     List<FlSpot> spots = [];
 
     for (int i = 0; i < chartData.length; i++) {
-      final val = (chartData[i]['gas'] as num?)?.toDouble() ?? 0;
+      final val = (chartData[i]['gas_kf'] as num?)?.toDouble() ?? 0;
 
       spots.add(FlSpot(i.toDouble(), val));
     }
@@ -44,43 +56,63 @@ class GasPage extends StatelessWidget {
   }
 
   String getObservation() {
-    if (data.length < 2) {
+    final avg = getAverage();
+
+    if (avg == 0) {
       return "Insufficient data available for analysis.";
     }
 
-    final latest = (data.first['gas'] as num?)?.toDouble() ?? 0;
+    final latest = getCurrent();
+    final change = ((latest - avg) / avg) * 100;
 
-    final previous = (data[1]['gas'] as num?)?.toDouble() ?? 0;
-
-    final diff = latest - previous;
-
-    if (diff > 100) {
-      return "Gas sensor readings indicate an increasing trend. Continued monitoring is recommended.";
+    if (change > 15) {
+      return "A significant increase in gas concentration was detected compared to recent monitoring trends.";
     }
 
-    if (diff < -100) {
-      return "Gas sensor readings indicate a decreasing trend. No significant anomaly is currently observed.";
+    if (change > 5) {
+      return "Gas concentration is increasing compared to recent monitoring trends.";
     }
 
-    return "Gas sensor values remain relatively stable during the observation period. No significant anomaly detected.";
+    return "Gas concentration remains within normal variation ranges.";
   }
 
-  String getStatus(double val) {
-    if (val < 2800) return "Low Activity";
-    if (val < 3200) return "Normal Activity";
-    return "High Activity";
+  String getStatus(double current, double avg) {
+    if (avg == 0) return "Stable";
+
+    final change = ((current - avg) / avg) * 100;
+
+    if (change > 15) {
+      return "Significant Increase";
+    }
+
+    if (change > 5) {
+      return "Rising";
+    }
+
+    return "Stable";
   }
 
-  Color getStatusColor(double val) {
-    if (val < 2800) return Colors.lightBlueAccent;
-    if (val < 3200) return Colors.white;
-    return Colors.redAccent;
+  Color getStatusColor(double current, double avg) {
+    if (avg == 0) return Colors.green;
+
+    final change = ((current - avg) / avg) * 100;
+
+    if (change > 15) {
+      return Colors.red;
+    }
+
+    if (change > 5) {
+      return Colors.orange;
+    }
+
+    return Colors.green;
   }
 
   @override
   Widget build(BuildContext context) {
     final current = getCurrent();
- 
+    final avgGas = getAverage();
+    final chartData = data.take(30).toList().reversed.toList();
 
     return Scaffold(
       backgroundColor: const Color(0xFF0D0D0D),
@@ -123,9 +155,9 @@ class GasPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    getStatus(current).toUpperCase(),
+                    getStatus(current, avgGas).toUpperCase(),
                     style: TextStyle(
-                      color: getStatusColor(current),
+                      color: getStatusColor(current, avgGas),
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
                     ),
@@ -191,7 +223,7 @@ class GasPage extends StatelessWidget {
                           child: LineChart(
                             LineChartData(
                               minX: 0,
-                              maxX: (data.length - 1).toDouble(),
+                              maxX: chartData.isEmpty ? 0 : (chartData.length - 1).toDouble(),
 
                               lineBarsData: [
                                 LineChartBarData(
@@ -239,7 +271,7 @@ class GasPage extends StatelessWidget {
                                   sideTitles: SideTitles(
                                     showTitles: true,
                                     getTitlesWidget: (value, meta) {
-                                      final chartData = data.reversed.toList();
+                                      final chartData = data.take(30).toList().reversed.toList();
 
                                       int index = value.toInt();
 
@@ -260,7 +292,7 @@ class GasPage extends StatelessWidget {
                                       DateTime dt;
 
                                       try {
-                                        dt = DateTime.parse(rawTime);
+                                        dt = DateTime.parse(rawTime).toLocal();
                                       } catch (_) {
                                         return const SizedBox();
                                       }
