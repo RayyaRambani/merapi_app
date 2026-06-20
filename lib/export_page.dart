@@ -23,7 +23,7 @@ class _ExportPageState extends State<ExportPage> {
       final dir = await getExternalStorageDirectory();
 
       if (dir == null) {
-        throw Exception("Storage not found");
+        throw Exception("Penyimpanan Tidak Ditemukan");
       }
 
       await FlutterDownloader.enqueue(
@@ -37,13 +37,13 @@ class _ExportPageState extends State<ExportPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           duration: const Duration(seconds: 5),
-          content: Text("File saved to:\n${dir.path}"),
+          content: Text("File disimpan di:\n${dir.path}"),
         ),
       );
     } catch (e) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text("Download error: $e")));
+      ).showSnackBar(SnackBar(content: Text("gagal mengunduh file: $e")));
     }
   }
 
@@ -96,7 +96,7 @@ class _ExportPageState extends State<ExportPage> {
         ),
         child: const Center(
           child: Text(
-            "EXPORT CSV",
+            "EKSPOR CSV",
             style: TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.bold,
@@ -118,7 +118,7 @@ class _ExportPageState extends State<ExportPage> {
         backgroundColor: Colors.black,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
-        title: const Text("Export Data", style: TextStyle(color: Colors.white)),
+        title: const Text("Ekspor Data", style: TextStyle(color: Colors.white)),
       ),
 
       body: SingleChildScrollView(
@@ -141,7 +141,7 @@ class _ExportPageState extends State<ExportPage> {
 
                 children: [
                   const Text(
-                    "Select Export Date",
+                    "Pilih Tanggal Ekspor",
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 16,
@@ -194,7 +194,7 @@ class _ExportPageState extends State<ExportPage> {
 
                 children: [
                   Text(
-                    "CSV Contents",
+                    "Isi DataCSV",
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 16,
@@ -240,14 +240,14 @@ class _ExportPageState extends State<ExportPage> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       duration: const Duration(seconds: 8),
-                      content: Text("File Location:\n${dir.path}"),
+                      content: Text("Lokasi File:\n${dir.path}"),
                     ),
                   );
                 },
 
                 icon: const Icon(Icons.folder),
 
-                label: const Text("SHOW FILE LOCATION"),
+                label: const Text("TAMPILKAN LOKASI FILE"),
               ),
             ),
           ],

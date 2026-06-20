@@ -25,7 +25,7 @@ class NotificationService {
           importance: Importance.max,
           priority: Priority.high,
 
-          ongoing: true,
+          ongoing: false,
           autoCancel:false,
 
           sound: RawResourceAndroidNotificationSound('alarm'),
@@ -47,8 +47,8 @@ class NotificationService {
 
     await notificationsPlugin.show(
       0,
-      "DANGER ALERT",
-      "Volcano status is DANGER!",
+      "PERINGATAN AKTIVITAS",
+      "Terdeteksi peningkatan signifikan pada parameter pemantauan.",
       details,
     );
   }

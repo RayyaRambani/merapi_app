@@ -16,7 +16,8 @@ class _SplashScreenState extends State<SplashScreen> {
   void initState() {
     super.initState();
 
-    Timer(const Duration(seconds: 5), () {
+    Timer(const Duration(seconds: 3), () {
+      if (!mounted) return;
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const LoginPage()),
@@ -64,7 +65,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
               // 🔴 TITLE (Orbitron)
               Text(
-                "VOLCANIC SURVEILLANCE",
+                "MONITORING AKTIVITAS VULKANIK",
                 textAlign: TextAlign.center,
                 style: GoogleFonts.orbitron(
                   fontSize: 20,
@@ -78,7 +79,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
               // ⚙️ SUBTITLE (Rajdhani)
               Text(
-                "REAL-TIME DATA • IOT • LORA",
+                "DATA REAL-TIME • IOT • LORA",
                 style: GoogleFonts.rajdhani(
                   fontSize: 13,
                   letterSpacing: 2,

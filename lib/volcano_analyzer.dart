@@ -20,12 +20,12 @@ class VolcanoAnalyzer {
 
     // HIGH
     if (gasChange > 15 || tempChange > 5) {
-      return "HIGH";
+      return "PERUBAHAN SIGNIFIKAN";
     }
 
     // INCREASED
     if (gasChange > 5 || tempChange > 2) {
-      return "INCREASED";
+      return "MENINGKAT";
     }
 
     // NORMAL
@@ -38,10 +38,10 @@ class VolcanoAnalyzer {
       case "NORMAL":
         return Colors.green;
 
-      case "INCREASED":
+      case "MENINGKAT":
         return Colors.orange;
 
-      case "HIGH":
+      case "PERUBAHAN SIGNIFIKAN":
         return Colors.red;
 
       default:
@@ -59,7 +59,7 @@ class VolcanoAnalyzer {
     required double avgPressure,
   }) {
     if (avgTemp == 0 || avgGas == 0) {
-      return "Insufficient historical data for analysis.";
+      return "Data historis tidak mencukupi untuk analisis.";
     }
 
     final gasChange = ((gas - avgGas) / avgGas) * 100;
@@ -67,13 +67,13 @@ class VolcanoAnalyzer {
     final tempChange = ((temp - avgTemp) / avgTemp) * 100;
 
     if (gasChange > 15 || tempChange > 5) {
-      return "A significant increase was detected compared to recent monitoring trends.";
+      return " Terdeteksi perubahan signifikan dibandingkan dengan tren pemantauan terkini.";
     }
 
     if (gasChange > 5 || tempChange > 2) {
-      return "An increase in environmental parameters was detected during recent monitoring.";
+      return " Terdeteksi peningkatan parameter lingkungan selama pemantauan terkini.";
     }
 
-    return "Monitoring parameters remain within normal variation ranges.";
+    return "Parameter lingkungan berada dalam rentang normal.";
   }
 }

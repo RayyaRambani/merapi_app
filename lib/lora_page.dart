@@ -10,7 +10,6 @@ class LoraPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     final latest = data.isNotEmpty ? data.first : {};
 
     final int rssi = (latest['rssi'] ?? 0).toInt();
@@ -23,19 +22,17 @@ class LoraPage extends StatelessWidget {
 
     final bool connected = DateTime.now().difference(createdAt).inSeconds < 15;
 
-    String quality = "Poor";
+    String quality = "Buruk";
 
     if (rssi > -70) {
-      quality = "Excellent";
+      quality = "Sangat Baik";
     } else if (rssi > -90) {
-      quality = "Good";
+      quality = "Baik";
     } else if (rssi > -110) {
-      quality = "Fair";
+      quality = "Sedang";
     }
 
-    final String displayQuality = connected ? quality : "No Signal";
-
-    
+    final String displayQuality = connected ? quality : "Tidak Ada Sinyal";
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -45,9 +42,9 @@ class LoraPage extends StatelessWidget {
         title: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("LoRa Connection", style: TextStyle(color: Colors.white)),
+            Text("Koneksi LoRa", style: TextStyle(color: Colors.white)),
             Text(
-              "Network status",
+              "Status Jaringan",
               style: TextStyle(fontSize: 12, color: Colors.white54),
             ),
           ],
@@ -64,21 +61,24 @@ class LoraPage extends StatelessWidget {
             connected ? snr.toStringAsFixed(1) : "--",
             displayQuality,
           ),
-          
 
           // ================= METRICS =================
           Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                Expanded(child: smallCard("RSSI",connected ? "$rssi dBm" : "--", Colors.orange)),
+                Expanded(
+                  child: smallCard(
+                    "RSSI",
+                    connected ? "$rssi dBm" : "--",
+                    Colors.orange,
+                  ),
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: smallCard(
                     "SNR",
-                    connected
-                        ? "${snr.toStringAsFixed(2)} dB"
-                        : "--",
+                    connected ? "${snr.toStringAsFixed(2)} dB" : "--",
                     Colors.cyan,
                   ),
                 ),
@@ -89,25 +89,21 @@ class LoraPage extends StatelessWidget {
           const SizedBox(height: 20),
 
           // ================= NETWORK =================
-          infoCard("LoRa Information", [
+          infoCard("Informasi LoRa", [
             item("Frequency", "915 MHz"),
             item("Bandwidth", "125 kHz"),
             item("Spreading Factor", "SF7"),
             item("TX Power", "17 dBm"),
 
-            const Divider(
-              color:Colors.white24,
-            ),
+            const Divider(color: Colors.white24),
 
             item(
-              "Last Packet",
+              "Data Terakhir Diterima",
               "${createdAt.hour.toString().padLeft(2, '0')}:"
                   "${createdAt.minute.toString().padLeft(2, '0')}:"
                   "${createdAt.second.toString().padLeft(2, '0')}",
             ),
           ]),
-
-
 
           const SizedBox(height: 30),
         ],
@@ -116,7 +112,12 @@ class LoraPage extends StatelessWidget {
   }
 
   // ================= CONNECTION CARD =================
-  Widget connectionCard(bool connected, String rssi, String snr, String quality) {
+  Widget connectionCard(
+    bool connected,
+    String rssi,
+    String snr,
+    String quality,
+  ) {
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(20),
@@ -135,7 +136,7 @@ class LoraPage extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
-                "Connection Status",
+                "Status Koneksi",
                 style: TextStyle(color: Colors.white70),
               ),
               Icon(
@@ -148,7 +149,7 @@ class LoraPage extends StatelessWidget {
           const SizedBox(height: 10),
 
           Text(
-            connected ? "Connected" : "Disconnected",
+            connected ? "Terhubung" : "Terputus",
             style: const TextStyle(
               color: Colors.white,
               fontSize: 26,
@@ -162,7 +163,7 @@ class LoraPage extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               column("RSSI", rssi),
-              column("Quality", quality),
+              column("Kualitas", quality),
               column("SNR", snr),
             ],
           ),
@@ -172,7 +173,6 @@ class LoraPage extends StatelessWidget {
   }
 
   // ================= SECTION CARD =================
-  
 
   // ================= SMALL CARD =================
   Widget smallCard(String title, String value, Color color) {

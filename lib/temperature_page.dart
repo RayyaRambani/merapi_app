@@ -20,6 +20,7 @@ class TemperaturePage extends StatelessWidget {
 
     return spots;
   }
+
   List<FlSpot> getHumidityChart() {
     final chartData = data.reversed.toList();
 
@@ -69,6 +70,7 @@ class TemperaturePage extends StatelessWidget {
         .toList();
     return temps.reduce((a, b) => a + b) / temps.length;
   }
+
   double getAvgHumidity() {
     if (data.isEmpty) return 0;
 
@@ -82,14 +84,14 @@ class TemperaturePage extends StatelessWidget {
     double humDiff = (hum - avgHum).abs();
 
     if (tempDiff >= 3 || humDiff >= 3) {
-      return "Significant Change";
+      return "Perubahan Signifikan";
     }
 
     if (tempDiff >= 1 || humDiff >= 1) {
-      return "Increasing";
+      return "Meningkat";
     }
 
-    return "Stable";
+    return "Stabil";
   }
 
   Color getColor(double temp, double avgTemp, double hum, double avgHum) {
@@ -112,14 +114,14 @@ class TemperaturePage extends StatelessWidget {
     double humDiff = (hum - avgHum).abs();
 
     if (tempDiff >= 3 || humDiff >= 3) {
-      return "Significant variations were detected in environmental conditions compared to recent monitoring averages.";
+      return " Terdeteksi perubahan signifikan dibandingkan dengan tren pemantauan terkini.";
     }
 
     if (tempDiff >= 1 || humDiff >= 1) {
-      return "Moderate environmental variations were detected during recent monitoring.";
+      return " Terdeteksi peningkatan parameter lingkungan selama pemantauan terkini.";
     }
 
-    return "Temperature and humidity remain within normal variation ranges.";
+    return "Parameter lingkungan berada dalam rentang normal.";
   }
 
   double getUpdateRate() {
@@ -154,7 +156,10 @@ class TemperaturePage extends StatelessWidget {
       return const Scaffold(
         backgroundColor: Color(0xFF0D0D0D),
         body: Center(
-          child: Text("No Data", style: TextStyle(color: Colors.white)),
+          child: Text(
+            "Data Tidak Tersedia",
+            style: TextStyle(color: Colors.white),
+          ),
         ),
       );
     }
@@ -168,7 +173,7 @@ class TemperaturePage extends StatelessWidget {
         backgroundColor: Colors.black,
         iconTheme: const IconThemeData(color: Colors.white),
         title: const Text(
-          "Environmental Conditions",
+          "Kondisi Lingkungan",
           style: TextStyle(color: Colors.white),
         ),
       ),
@@ -189,7 +194,7 @@ class TemperaturePage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    "Environmental Conditions",
+                    "Kondisi Lingkungan Saat Ini",
                     style: TextStyle(color: Colors.white70),
                   ),
 
@@ -207,7 +212,7 @@ class TemperaturePage extends StatelessWidget {
                   const SizedBox(height: 8),
 
                   Text(
-                    "Humidity : ${humidity.toStringAsFixed(1)}%",
+                    "Kelembapan : ${humidity.toStringAsFixed(1)}%",
                     style: const TextStyle(color: Colors.white70, fontSize: 18),
                   ),
 
@@ -216,9 +221,8 @@ class TemperaturePage extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      mini("Avg Temp", getAvg()),
-                      miniHumidity("Avg Hum", getAvgHumidity()),
-                      
+                      mini("Rata-rata Suhu", getAvg()),
+                      miniHumidity("Rata-rata Kelembapan", getAvgHumidity()),
                     ],
                   ),
                 ],
@@ -231,7 +235,7 @@ class TemperaturePage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    "Temperature Trend",
+                    "Tren Suhu",
                     style: TextStyle(color: Colors.white),
                   ),
                   const SizedBox(height: 12),
@@ -372,8 +376,6 @@ class TemperaturePage extends StatelessWidget {
 
                             dotData: FlDotData(show: true),
                           ),
-
-                          
                         ],
                       ),
                     ),
@@ -387,7 +389,7 @@ class TemperaturePage extends StatelessWidget {
 
                 children: [
                   const Text(
-                    "Humidity Trend",
+                    "Tren Kelembapan",
                     style: TextStyle(color: Colors.white),
                   ),
 
@@ -399,7 +401,7 @@ class TemperaturePage extends StatelessWidget {
                     child: LineChart(
                       LineChartData(
                         minX: 0,
-                        maxX: data.isEmpty ? 0:(data.length - 1).toDouble(),
+                        maxX: data.isEmpty ? 0 : (data.length - 1).toDouble(),
 
                         minY: minHum,
                         maxY: maxHum,
@@ -533,7 +535,7 @@ class TemperaturePage extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          "Update Rate",
+                          "Interval Data",
                           style: TextStyle(color: Colors.white70),
                         ),
                         SizedBox(height: 6),
@@ -559,9 +561,19 @@ class TemperaturePage extends StatelessWidget {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          getStatus(current, avgTemp, humidity, avgHumidity).toUpperCase(),
+                          getStatus(
+                            current,
+                            avgTemp,
+                            humidity,
+                            avgHumidity,
+                          ).toUpperCase(),
                           style: TextStyle(
-                            color: getColor(current, avgTemp, humidity, avgHumidity),
+                            color: getColor(
+                              current,
+                              avgTemp,
+                              humidity,
+                              avgHumidity,
+                            ),
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -577,7 +589,7 @@ class TemperaturePage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text("Analysis", style: TextStyle(color: Colors.white)),
+                  const Text("Analisis", style: TextStyle(color: Colors.white)),
                   const SizedBox(height: 10),
                   Text(
                     getAnalysis(current, avgTemp, humidity, avgHumidity),
@@ -627,6 +639,4 @@ class TemperaturePage extends StatelessWidget {
       ],
     );
   }
-
-  
 }

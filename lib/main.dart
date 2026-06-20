@@ -13,7 +13,6 @@ import 'volcano_analyzer.dart';
 import 'lora_page.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'notification_service.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
@@ -90,7 +89,7 @@ class _DataPageState extends State<DataPage> {
         final result = analyzer();
 
         // 🔴 MODE ALARM (LOOP)
-        if (result["status"] == "DANGER") {
+        if (result["status"] == "PERUBAHAN SIGNIFIKAN") {
           // kalau belum ada timer → mulai
           if (dangerTimer == null) {
             dangerTimer = Timer.periodic(Duration(seconds: 5), (_) {
@@ -140,7 +139,7 @@ class _DataPageState extends State<DataPage> {
   Map analyzer() {
     if (data.length < 2) {
       return {
-        "status": "SAFE",
+        "status": "Memuat",
         "color": Colors.green,
         "analysis": "Menunggu data...",
       };
@@ -243,7 +242,7 @@ class _DataPageState extends State<DataPage> {
               ),
               const SizedBox(width: 12),
               Text(
-                "SYSTEM STATUS",
+                "STATUS LINGKUNGAN",
                 style: GoogleFonts.rajdhani(
                   color: Colors.white70,
                   fontSize: 12,
@@ -406,7 +405,10 @@ class _DataPageState extends State<DataPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("DATA LOG", style: GoogleFonts.orbitron(color: Colors.white)),
+          Text(
+            "RIWAYAT DATA",
+            style: GoogleFonts.orbitron(color: Colors.white),
+          ),
 
           const SizedBox(height: 12),
 
@@ -481,22 +483,22 @@ class _DataPageState extends State<DataPage> {
                       const SizedBox(height: 10),
 
                       Text(
-                        "Temperature : ${((d['temperature_kf']?? 0)as num).toStringAsFixed(2)} °C",
+                        "Suhu : ${((d['temperature_kf'] ?? 0) as num).toStringAsFixed(2)} °C",
                         style: GoogleFonts.rajdhani(color: Colors.white),
                       ),
 
                       Text(
-                        "Humidity : ${((d['humidity_kf']?? 0)as num).toStringAsFixed(2)} %",
+                        "Kelembapan : ${((d['humidity_kf'] ?? 0) as num).toStringAsFixed(2)} %",
                         style: GoogleFonts.rajdhani(color: Colors.white),
                       ),
 
                       Text(
-                        "Gas : ${((d['gas_kf']?? 0)as num).toStringAsFixed(2)} ADC",
+                        "Gas : ${((d['gas_kf'] ?? 0) as num).toStringAsFixed(2)} ADC",
                         style: GoogleFonts.rajdhani(color: Colors.white),
                       ),
 
                       Text(
-                        "Pressure : ${((d['pressure_kf']?? 0)as num).toStringAsFixed(2)} hPa",
+                        "Tekanan : ${((d['pressure_kf'] ?? 0) as num).toStringAsFixed(2)} hPa",
                         style: GoogleFonts.rajdhani(color: Colors.white),
                       ),
                     ],
@@ -622,15 +624,20 @@ class _DataPageState extends State<DataPage> {
 
     final rssi = (latest['rssi'] ?? 0).toInt();
 
-    String quality = "Poor";
+    String quality = "Buruk";
 
     if (rssi > -70) {
-      quality = "Excellent";
+      quality = "Sangat Baik";
     } else if (rssi > -90) {
-      quality = "Good";
+      quality = "Baik";
     } else if (rssi > -110) {
-      quality = "Fair";
+      quality = "Cukup";
     }
+
+    final displayQuality = connected ? quality : "Tidak Ada Sinyal";
+
+    final displayRssi = connected ? "$rssi dBm" : "--";
+
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -683,7 +690,7 @@ class _DataPageState extends State<DataPage> {
             const SizedBox(height: 20),
 
             Text(
-              "LoRa Connection",
+              "Koneksi LoRa",
               style: GoogleFonts.orbitron(
                 color: Colors.white70,
                 fontSize: 12,
@@ -694,7 +701,7 @@ class _DataPageState extends State<DataPage> {
             const SizedBox(height: 6),
 
             Text(
-              connected ? "CONNECTED" : "DISCONNECTED",
+              connected ? "TERHUBUNG" : "TIDAK TERHUBUNG",
               style: GoogleFonts.orbitron(
                 color: Colors.white,
                 fontSize: 18,
@@ -705,13 +712,13 @@ class _DataPageState extends State<DataPage> {
             const SizedBox(height: 6),
 
             Text(
-              "Signal Quality: $quality",
+              "Kualitas Sinyal: $displayQuality",
               style: GoogleFonts.rajdhani(color: Colors.white70, fontSize: 13),
             ),
             const SizedBox(height: 4),
 
             Text(
-              "RSSI: $rssi dBm",
+              "RSSI: $displayRssi",
               style: GoogleFonts.rajdhani(color: Colors.white54, fontSize: 12),
             ),
           ],
@@ -856,7 +863,7 @@ class _DataPageState extends State<DataPage> {
                       const SizedBox(height: 12),
 
                       Text(
-                        "Temperature",
+                        "Suhu",
                         style: GoogleFonts.rajdhani(color: Colors.white70),
                       ),
 
@@ -905,7 +912,7 @@ class _DataPageState extends State<DataPage> {
                       const SizedBox(height: 12),
 
                       Text(
-                        "Humidity",
+                        "Kelembapan",
                         style: GoogleFonts.rajdhani(color: Colors.white70),
                       ),
 
@@ -991,7 +998,7 @@ class _DataPageState extends State<DataPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    "Export Data",
+                    "Ekspor Data",
                     style: GoogleFonts.orbitron(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -1001,7 +1008,7 @@ class _DataPageState extends State<DataPage> {
                   ),
                   SizedBox(height: 4),
                   Text(
-                    "Download sensor records",
+                    "Unduh data hasil pemantauan",
                     style: GoogleFonts.rajdhani(
                       color: Colors.white54,
                       fontSize: 12,
@@ -1032,9 +1039,9 @@ class _DataPageState extends State<DataPage> {
         centerTitle: true,
 
         title: Text(
-          "VULCANO SURVEILLANCE",
+          "MONITORING AKTIVITAS VULKANIK",
           style: GoogleFonts.orbitron(
-            fontSize: 18,
+            fontSize: 14,
             fontWeight: FontWeight.bold,
             letterSpacing: 2,
             color: Colors.white,
@@ -1093,7 +1100,7 @@ class _DataPageState extends State<DataPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              "LIVE DATA STREAM",
+                              "DATA TERAKHIR",
                               style: GoogleFonts.orbitron(
                                 color: Colors.greenAccent,
                                 fontSize: 11,
@@ -1162,7 +1169,7 @@ class _DataPageState extends State<DataPage> {
                                 ),
 
                                 miniSensorCard(
-                                  "Pressure",
+                                  "Tekanan",
                                   "${format(latest['pressure_kf'])} hPa",
                                   Icons.speed,
                                   Colors.blue,

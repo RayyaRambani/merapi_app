@@ -40,9 +40,9 @@ class PressurePage extends StatelessWidget {
   // ================= STATUS =================
   String getTrend() {
     final change = getChange();
-    if (change > 1) return "rising";
-    if (change < -1) return "falling";
-    return "stable";
+    if (change > 1) return "Meningkat";
+    if (change < -1) return "Menurun";
+    return "Stabil";
   }
 
   String getPressureStatus() {
@@ -52,20 +52,20 @@ class PressurePage extends StatelessWidget {
     double diff = current - avg;
 
     if (diff > 1) {
-      return "Rising";
+      return "Meningkat";
     }
 
     if (diff < -1) {
-      return "Falling";
+      return "Menurun";
     }
 
-    return "Stable";
+    return "Stabil";
   }
   String getStability() {
     final diff = getMax() - getMin();
-    if (diff < 1) return "Stable";
-    if (diff < 3) return "Moderate";
-    return "Variable";
+    if (diff < 1) return "Stabil";
+    if (diff < 3) return "Fluktuasi Sedang";
+    return "Fluktuasi Tinggi";
   }
 
   // ================= CHART ================= //
@@ -96,9 +96,9 @@ class PressurePage extends StatelessWidget {
         title: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("Pressure Sensor", style: TextStyle(color: Colors.white)),
+            Text("Tekanan Udara", style: TextStyle(color: Colors.white)),
             Text(
-              "Atmospheric monitoring",
+              "Pemantauan atmosfer",
               style: TextStyle(color: Colors.white54, fontSize: 12),
             ),
           ],
@@ -122,7 +122,7 @@ class PressurePage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    "Current Pressure",
+                    "Tekanan Saat Ini",
                     style: TextStyle(color: Colors.white70),
                   ),
 
@@ -162,9 +162,9 @@ class PressurePage extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      mini("Average", getAvg()),
-                      mini("Max", getMax()),
-                      mini("Min", getMin()),
+                      mini("Rata-rata", getAvg()),
+                      mini("Maksimum", getMax()),
+                      mini("Minimum", getMin()),
                     ],
                   ),
                 ],
@@ -182,7 +182,7 @@ class PressurePage extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text(
-                        "Pressure Trend",
+                        "Tren Tekanan",
                         style: TextStyle(color: Colors.white),
                       ),
                       Text(
@@ -276,12 +276,12 @@ class PressurePage extends StatelessWidget {
                     child: Column(
                       children: [
                         const Text(
-                          "Stability",
+                          "Stabilitas",
                           style: TextStyle(color: Colors.white54),
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          getPressureStatus(),
+                          getStability(),
                           style: const TextStyle(color: Colors.white),
                         ),
                       ],
@@ -313,18 +313,18 @@ class PressurePage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    "Observation",
+                    "Analisis",
                     style: TextStyle(color: Colors.white),
                   ),
 
                   const SizedBox(height: 12),
 
                   Text(
-                    getTrend() == "rising"
-                        ? "Atmospheric pressure shows an increasing trend during the observation period."
-                        : getTrend() == "falling"
-                        ? "Atmospheric pressure shows a decreasing trend during the observation period."
-                        : "Atmospheric pressure remains relatively stable during the observation period.",
+                    getTrend() == "Meningkat"
+                        ? "Tekanan atmosfer menunjukkan tren meningkat selama periode pemantauan."
+                        : getTrend() == "Menurun"
+                        ? "Tekanan atmosfer menunjukkan tren menurun selama periode pemantauan."
+                        : "Tekanan udara tetap relatif stabil selama periode pemantauan.",
 
                     style: const TextStyle(color: Colors.white70, height: 1.5),
                   ),

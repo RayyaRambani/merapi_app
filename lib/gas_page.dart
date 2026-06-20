@@ -59,37 +59,37 @@ class GasPage extends StatelessWidget {
     final avg = getAverage();
 
     if (avg == 0) {
-      return "Insufficient data available for analysis.";
+      return "Data historis belum mencukupi untuk dilakukan analisis.";
     }
 
     final latest = getCurrent();
     final change = ((latest - avg) / avg) * 100;
 
     if (change > 15) {
-      return "A significant increase in gas concentration was detected compared to recent monitoring trends.";
+      return "Terdeteksi peningkatan signifikan pada konsentrasi gas dibandingkan tren pemantauan sebelumnya.";
     }
 
     if (change > 5) {
-      return "Gas concentration is increasing compared to recent monitoring trends.";
+      return "Konsentrasi gas menunjukkan peningkatan dibandingkan rata-rata pemantauan sebelumnya.";
     }
 
-    return "Gas concentration remains within normal variation ranges.";
+    return "Konsentrasi gas tetap berada dalam rentang variasi normal.";
   }
 
   String getStatus(double current, double avg) {
-    if (avg == 0) return "Stable";
+    if (avg == 0) return "Stabil";
 
     final change = ((current - avg) / avg) * 100;
 
     if (change > 15) {
-      return "Significant Increase";
+      return "Peningkatan Signifikan";
     }
 
     if (change > 5) {
-      return "Rising";
+      return "Meningkat";
     }
 
-    return "Stable";
+    return "Stabil";
   }
 
   Color getStatusColor(double current, double avg) {
@@ -123,7 +123,7 @@ class GasPage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              "Gas Activity Monitoring",
+              "Monitoring Gas",
               style: TextStyle(color: Colors.white),
             ),
             // Text(
@@ -150,7 +150,7 @@ class GasPage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    "Gas Activity Status",
+                    "Status Aktivitas Gas",
                     style: TextStyle(color: Colors.white70),
                   ),
                   const SizedBox(height: 10),
@@ -175,11 +175,11 @@ class GasPage extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Text(
-                          "Sensor Value",
+                          "Nilai Sensor",
                           style: TextStyle(color: Colors.white),
                         ),
                         Text(
-                          "${current.toStringAsFixed(0)} ADC Value",
+                          "${current.toStringAsFixed(0)} Nilai ADC",
                           style: const TextStyle(color: Colors.white),
                         ),
                       ],
@@ -208,7 +208,7 @@ class GasPage extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          "Gas Sensor Trend",
+                          "Tren Sensor Gas",
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 16,
@@ -332,7 +332,7 @@ class GasPage extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          "Observation",
+                          "Analisis",
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 16,
