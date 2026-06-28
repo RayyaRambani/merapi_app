@@ -62,7 +62,7 @@ class _DataPageState extends State<DataPage> {
     super.initState();
     fetchData();
 
-    timer = Timer.periodic(const Duration(seconds: 10), (_) {
+    timer = Timer.periodic(const Duration(seconds: 5), (_) {
       fetchData();
     });
   }
@@ -1194,6 +1194,21 @@ class _DataPageState extends State<DataPage> {
                 // 📜 LOG
                 buildLog(),
 
+                const SizedBox(height: 16),
+
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Text(
+                    "LOKASI NODE SENSOR",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 8),
                 // 📍 MAP
                 buildMap(),
 
