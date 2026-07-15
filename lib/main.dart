@@ -53,6 +53,8 @@ class _DataPageState extends State<DataPage> {
   Timer? timer;
   Timer? dangerTimer;
   // detik
+  int persistenceCounter = 0;
+  final int persistenceLimit = 5;
 
   final String apiUrl =
       "https://merapi-backend-production.up.railway.app/api/v1/data";
@@ -90,14 +92,18 @@ class _DataPageState extends State<DataPage> {
 
         // 🔴 MODE ALARM (LOOP)
         if (result["status"] == "PERUBAHAN SIGNIFIKAN") {
-          // kalau belum ada timer → mulai
-          if (dangerTimer == null) {
-            dangerTimer = Timer.periodic(Duration(seconds: 5), (_) {
-              NotificationService.showDangerNotification();
-            });
+          persistenceCounter++;
+          if (persistenceCounter >= persistenceLimit) {
+            if (dangerTimer == null) {
+              dangerTimer = Timer.periodic(Duration(seconds: 5), (_) {
+                NotificationService.showDangerNotification();
+              });
+            }
           }
+          // kalau belum ada timer → mulai
         } else {
           // kalau bukan danger → stop alarm
+          persistenceCounter = 0;
           dangerTimer?.cancel();
           dangerTimer = null;
         }
